@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include "config.h"
-#include <ArduinoJson.h>
+#include "ArduinoJson.h"
 
 ConfigSettingsStruct ConfigSettings;
 ConfigPanel cfgPanel;

@@ -5,7 +5,7 @@
 #define __FREKVENSPANEL_H
 
 #include <Arduino.h>
-#include <Adafruit_GFX.h>
+#include "Adafruit_GFX.h"
 
 class FrekvensPanel : public Adafruit_GFX
 {
