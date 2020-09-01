@@ -1,5 +1,4 @@
 #include <Arduino.h>
-
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
@@ -13,8 +12,12 @@
 #include <Wire.h>
 #include <SPI.h>
 // see readme.md for wiring instructions
-
+#include <WiFiUdp.h>
 #include "button.h"
+#include "NTPClient.h"
+#include "TimezoneList.h"
+#include <ArduinoOTA.h>
+#include "Quadrant.h"
 
 extern struct ConfigSettingsStruct ConfigSettings;
 extern struct ConfigPanel cfgPanel;
@@ -45,9 +48,13 @@ FrekvensPanel panel(p_latch, p_clock, p_data);
 char activeProgram = 0;
 char activeBrightMode = 1;
 
+
 // the red wire (COM) for the buttons is connected to GND, so the button signal is inverted
 SimpleButton button1(1, p_btn1, 1, 20);
 SimpleButton button2(2, p_btn2, 1, 20);
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "europe.pool.ntp.org", 3600, 60000);
 
 void setBrightMode(int brightMode)
 {
@@ -78,7 +85,7 @@ void setBrightMode(int brightMode)
 
 void setProgram(int program)
 {
-  activeProgram = (program % 3);
+  activeProgram = (program % 4);
 }
 
 void buttonHandler(int id, int state)
@@ -97,28 +104,57 @@ void buttonHandler(int id, int state)
   }
 }
 
-void program0()
+void computeTime(Timezone tz, time_t utc)
 {
+  char buf[40];
+  char m[4];           // temporary storage for month string (DateStrings.cpp uses shared buffer)
+  TimeChangeRule *tcr; // pointer to the time change rule, use to get the TZ abbrev
+
+  time_t t = tz.toLocal(utc, &tcr);
+  strcpy(m, monthShortStr(month(t)));
+  sprintf(buf, "%.2d:%.2d:%.2d %s %.2d %s %d %s",
+          hour(t), minute(t), second(t), dayShortStr(weekday(t)), day(t), m, year(t), tcr->abbrev);
+  Serial.print(buf);
+  Serial.print(' ');
+}
+time_t convertToTimeT(int hour, int min, int sec)
+{
+  // tmElements_t tmSet;
+  // tmSet.Year = YYYY - 1970;
+  // tmSet.Month = MM;
+  // tmSet.Day = DD;
+  // tmSet.Hour = hh;
+  // tmSet.Minute = mm;
+  // tmSet.Second = ss;
+  // return makeTime(tmSet);
+}
+void displayTime()
+{
+  // //Call function to set TZ+DST to time (utc is time and should be NTP call )
+  // timeClient.update()
+  //     time_t utcTime = convertToTimeT(timeClient.getHours(), timeClient.getMinutes(), timeClient.getSeconds());
+  // computeTime(CE, utcTime)
   //int s = sizeText.toInt();
-  panel.fillScreen(0);
-  if (cfgPanel.scrollText.toInt())
-  {
-    panel.setCursor(positionX, positionY);
-  }
-  else
-  {
-    positionX = cfgPanel.xText.toInt();
-    positionY = cfgPanel.yText.toInt();
-    panel.setCursor(positionX, positionY);
-  }
-  panel.setTextWrap(false);
-  panel.setTextSize(cfgPanel.sizeText.toInt());
-  analogWrite(p_ena, cfgPanel.light.toInt());
-  panel.print(cfgPanel.text);
+  // TODO
+  // panel.fillScreen(0);
+  // if (cfgPanel.scrollText.toInt())
+  // {
+  //   panel.setCursor(positionX, positionY);
+  // }
+  // else
+  // {
+  //   positionX = cfgPanel.xText.toInt();
+  //   positionY = cfgPanel.yText.toInt();
+  //   panel.setCursor(positionX, positionY);
+  // }
+  // panel.setTextWrap(false);
+  // panel.setTextSize(cfgPanel.sizeText.toInt());
+  // analogWrite(p_ena, cfgPanel.light.toInt());
+  // panel.print(cfgPanel.text);
 }
 
 int p1_i = 0;
-void program1()
+void displayTemp()
 {
   /* float pi23 = PI*2/3;
   float p = 0.02 * p1_i++;
@@ -136,12 +172,21 @@ void program1()
   panel.drawLine(x2,y2,x0,y0,1);  */
 }
 
-void program2()
+void displayTimeAndTemp()
 {
 
   /*int x = random(16);
   int y = random(16);
   panel.drawRect(x,y,random(16-x),random(16-y),random(6)==0);*/
+}
+
+void displayText()
+{
+}
+
+void configureNTP()
+{
+  timeClient.begin();
 }
 
 ICACHE_RAM_ATTR void ISR(void)
@@ -184,7 +229,7 @@ ICACHE_RAM_ATTR void ISR(void)
 }
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   if (!SPIFFS.begin())
   {
     return;
@@ -224,7 +269,7 @@ void setup()
   button1.attachHandler(buttonHandler);
   button2.attachHandler(buttonHandler);
   panel.scan();
-
+  configureNTP();
   noInterrupts();                              // Switch off interrupts whilst they are set up
   timer0_isr_init();                           // Initialise Timer0
   timer0_attachInterrupt(ISR);                 // Goto the ISR function below when an interrupt occurs
@@ -234,7 +279,7 @@ void setup()
 
 void loop()
 {
-
+  activeProgram = 4;
   webServerHandleClient();
 
   if (modeWiFi == "STA")
@@ -245,17 +290,23 @@ void loop()
       setupSTAWifi();
     }
   }
-
   switch (activeProgram)
   {
+
+    // Serial.println(timeClient.getFormattedTime());F
   case 0:
-    program0();
+    displayTime();
     break;
   case 1:
-    program1();
+    displayTemp();
     break;
   case 2:
-    program2();
+    displayTimeAndTemp();
+    break;
+  case 3:
+    displayText();
+    break;
+  case 4:
     break;
   }
   panel.scan();
