@@ -66,6 +66,7 @@ void Number::scrollDown(byte _x, byte _y)
   }
 
   // movement for numb to appear we must redraw it since last command cleared quandrant (_panel->fillRect(_x, _y, 8, 8, 0))  draw(_x, _y);
+  draw(_x, _y);
   _panel->scan();
 }
 //// useful only for NW a NE, not checked with others

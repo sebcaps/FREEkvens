@@ -34,19 +34,13 @@ void setup()
 void loop()
 {
   panel.scan();
-  NorthWest.draw(0);
-  NorthEast.draw(0);
-  SouthWest.draw(0);
-  SouthEast.draw(0);
-  delay(3000);
- 
-  for (int i = 1; i < 10; i++)
+  for (int i = 0; i < 10; i++)
   {
     NorthWest.draw(i);
     NorthEast.draw(i);
     SouthWest.draw(i);
     SouthEast.draw(i);
-    delay(1000);
+    delay(2000);
   }
   delay(5000);
 }
