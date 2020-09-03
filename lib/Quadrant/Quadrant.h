@@ -1,6 +1,6 @@
 #ifndef __QUADRANT_H
 #define __QUADRANT_H
-#include "Arduino.h";
+#include "Arduino.h"
 #include "FrekvensPanel.h"
 #include "Number.h"
 
