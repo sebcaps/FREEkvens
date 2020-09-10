@@ -23,7 +23,7 @@ class Quadrant
 public:
   Quadrant(location position);
   void begin(FrekvensPanel *panel, HardwareSerial *serial);
-  void draw(byte nombre);
+  void draw(byte nombre, boolean force);
 
 private:
   byte _x;

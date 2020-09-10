@@ -9,49 +9,60 @@
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include "button.h"
+#include <PolledTimeout.h>
+#include "brightness.h"
 
 #define p_ena 14
 #define p_data 12
 #define p_clock 2
 #define p_latch 0
-
+#define NB_PROG 2
 #define p_btn1 13 // A0 (Adafruit Feather M0) - RED button (black wire)
 #define p_btn2 5  // A1 (Adafruit Feather M0) - YELLOW button (white wire)
+#define p_photo 0
 // TODO replace by config
-const char *ssid = "freebox_XZQPTI";
-const char *password = "julie0807";
+const char *ssid = "xxxxx";
+const char *password = "xxxxx";
 
 extern struct ConfigSettingsStruct ConfigSettings;
 extern struct ConfigPanel cfgPanel;
-enum
+enum program
 {
   HOUR,
-  TEMP,
-  HOURTEMP
-} program;
+  TEMP
+};
 
+/***********Initialise global vars & object ************/
+/********Vars******/
 bool configOK = false;
 String modeWiFi = "STA";
-
-FrekvensPanel panel(p_latch, p_clock, p_data);
+// TODO get this from config
 byte activeProgram = TEMP;
+boolean forceDisplay = true;
+// TODO get this from config ?
 byte activeBrightMode = 1;
-// TODO set to 0
-byte currentTemp = 21;
-
+byte currentTemp = 0;
+// Local Port to Listen For UDP Packets
+uint16_t localPort;
+/********Objects******/
+/*Panel*/
+FrekvensPanel panel(p_latch, p_clock, p_data);
+/*Button*/
 SimpleButton button1(1, p_btn1, 1, 20);
 SimpleButton button2(2, p_btn2, 1, 20);
-
+/*Quadrant (ie part of panel)*/
 Quadrant NorthEast(NE);
 Quadrant SouthWest(SW);
 Quadrant SouthEast(SE);
 Quadrant NorthWest(NW);
 
-// Local Port to Listen For UDP Packets
-uint16_t localPort;
+static esp8266::polledTimeout::periodicMs updateBrightness(15000);
+int rest;
+
 void setProgram(int program)
 {
-  activeProgram = program % 3;
+  activeProgram = program % NB_PROG;
+  forceDisplay = true;
 }
 void buttonHandler(int id, int state)
 {
@@ -64,8 +75,6 @@ void buttonHandler(int id, int state)
       // setBrightMode(activeBrightMode + 1);
       break;
     case 2:
-      // FIXME is this the correct location to clear panel ??
-      panel.clear();
       setProgram(activeProgram + 1);
       break;
     }
@@ -76,10 +85,9 @@ byte getTemp()
 {
   return 20;
 }
+
 void setup()
 {
-
-  // TODO replace by final solution CONFIG.
   Serial.begin(115200);
   // Input for buttons
   pinMode(p_btn1, INPUT_PULLUP);
@@ -99,8 +107,9 @@ void setup()
     delay(500);
     Serial.print(".");
   }
-  // Initialise Temp;
+  // Initialise Temperature;
   currentTemp = getTemp();
+
   // Initialise panel Quadrants
   NorthWest.begin(&panel, &Serial);
   NorthEast.begin(&panel, &Serial);
@@ -108,6 +117,7 @@ void setup()
   SouthEast.begin(&panel, &Serial);
   //TODO configure default brightness
   analogWrite(p_ena, 1000);
+  analogRead(p_photo);
   panel.clear();
 
   localPort = random(1024, 65535);
@@ -123,66 +133,77 @@ void displayTemp(byte temp)
   panel.setCursor(2, 4);
   panel.print(temp);
   panel.drawCircle(14, 3, 1, 1);
-  // panel.setCursor()
 }
 void digitalClockDisplay()
 {
-  NorthWest.draw(hour(CE.toLocal(utc, &tcr)) / 10);
-  NorthEast.draw(hour(CE.toLocal(utc, &tcr)) % 10);
-  SouthWest.draw(minute() / 10);
-  SouthEast.draw(minute() % 10);
+  NorthWest.draw(hour(CE.toLocal(utc, &tcr)) / 10, forceDisplay);
+  NorthEast.draw(hour(CE.toLocal(utc, &tcr)) % 10, forceDisplay);
+  SouthWest.draw(minute() / 10, forceDisplay);
+  SouthEast.draw(minute() % 10, forceDisplay);
 }
 
 void loop()
 {
-  byte temp;
-  panel.scan();
-  static time_t prevDisplay = 0;
-  timeStatus_t ts = timeStatus();
-  utc = now();
-  button1.scan();
-  button2.scan();
-  switch (activeProgram)
+  rest = analogRead(p_photo);
+  if (updateBrightness)
   {
-  case HOUR:
-    Serial.println("Just display HOUR...");
-    Serial.println(activeProgram);
-    switch (ts)
+    Serial.println("Will update brightness");
+    Serial.print("Read value is :");
+    Serial.println(rest);
+    Serial.print("Computed value is :");
+    Serial.println(computebrightness(rest));
+    analogWrite(p_ena,computebrightness(rest));
+  }
+
+byte temp;
+panel.scan();
+static time_t prevDisplay = 0;
+timeStatus_t ts = timeStatus();
+utc = now();
+button1.scan();
+button2.scan();
+
+switch (activeProgram)
+{
+case HOUR:
+  switch (ts)
+  {
+  case timeNeedsSync:
+  case timeSet:
+    //update the display only if time has changed
+    if (now() != prevDisplay)
     {
-    case timeNeedsSync:
-    case timeSet:
-      //update the display only if time has changed
-      if (now() != prevDisplay)
+      prevDisplay = now();
+      digitalClockDisplay();
+      tmElements_t tm;
+      breakTime(now(), tm);
+      if (ts == timeNeedsSync)
       {
-        prevDisplay = now();
-        digitalClockDisplay();
-        tmElements_t tm;
-        breakTime(now(), tm);
-        if (ts == timeNeedsSync)
-        {
-          // TODO handle need of sync
-        }
+        // TODO handle need of sync
       }
-      break;
-    case timeNotSet:
-      // TODO display <No Sync> If Time Not Displayed
-      Serial.println("/!\\Time NOT SET /!\\");
-      now();
-      delay(3000);
     }
     break;
-  case TEMP:
-    Serial.println("Will display TEMP...");
-    temp = getTemp();
-    // if (temp != currentTemp)
-    // {
+  case timeNotSet:
+    // TODO display <No Sync> If Time Not Displayed
+    Serial.println("/!\\Time NOT SET /!\\");
+    now();
+    delay(3000);
+  }
+  forceDisplay = false;
+  break;
+case TEMP:
+  temp = getTemp();
+  if ((temp != currentTemp) || forceDisplay)
+  {
     currentTemp = temp;
     displayTemp(currentTemp);
-    // }
-
-    break;
-  case HOURTEMP:
-    Serial.println("Will display HOUR & TEMP...");
-    break;
+    Serial.println("Redraw temp since it changed or force!");
   }
+  else
+  {
+    // Serial.println("No temp changed, no redraw");
+  }
+  forceDisplay = false;
+  break;
+}
 }

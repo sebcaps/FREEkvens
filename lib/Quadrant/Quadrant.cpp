@@ -73,32 +73,33 @@ void Quadrant::begin(FrekvensPanel *panel, HardwareSerial *serial)
   _availableNumber[7] = seven;
   _availableNumber[8] = eight;
   _availableNumber[9] = nine;
-
-  _stream->println(_currentNombre);
 }
 
 //void Quadrant:: moveNumber(sens direction, axis axe) {
 //}
 
-void Quadrant::draw(byte nombre)
+void Quadrant::draw(byte nombre, boolean forceDisplay)
 {
-  if (_currentNombre == 99)
-  { // first time a number is displayed in quadrant
-    // just draw it
+  if (_currentNombre == 99 || forceDisplay)
+  { // first time a number is displayed in quadrant or need to redraw since force=true
+    // just draw it without animation
+    _stream->print("In draw, with force =");
+    _stream->println(forceDisplay);
+    _panel->fillRect(_x, _y, 8, 8, 0);
     _availableNumber[nombre].draw(_x, _y);
     _currentNombre = nombre;
     _panel->scan();
   }
-  else if (nombre != _currentNombre) // new number need to be updated
+  // new number need to be updated, handle animation
+  else if (nombre != _currentNombre)
   {
     changeNumber(nombre);
     _panel->scan();
   }
   else
   {
-    //NOPE
+    //Juste update screen
     _panel->scan();
-    _stream->println("NO CHANGES");
   }
 }
 void Quadrant::changeNumber(byte nombre)
