@@ -74,6 +74,7 @@ bool loadConfig() {
 }
 
 bool loadConfigPanel() {
+  Serial.println("LOAD CONFIG PANEl");
   File panelFile = SPIFFS.open("/config/panel.json", "r+");
   if (!panelFile) {
     return false;

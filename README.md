@@ -28,3 +28,4 @@ This is a proof of concept
 
 
 
+Warning allocate more than 1Mo to Filesystem ```"ldscript": "eagle.flash.4m2m.ld"```

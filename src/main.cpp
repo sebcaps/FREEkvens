@@ -11,6 +11,15 @@
 #include "button.h"
 #include <PolledTimeout.h>
 #include "brightness.h"
+#include "OneWire.h"
+#include "DallasTemperature.h"
+#include "temperature.h"
+#include <ESP8266mDNS.h>
+#include <WiFiClient.h>
+#include "FS.h"
+#include "config.h"
+#include "web.h"
+#include "wifi.h"
 
 #define p_ena 14
 #define p_data 12
@@ -20,9 +29,7 @@
 #define p_btn1 13 // A0 (Adafruit Feather M0) - RED button (black wire)
 #define p_btn2 5  // A1 (Adafruit Feather M0) - YELLOW button (white wire)
 #define p_photo 0
-// TODO replace by config
-const char *ssid = "xxxxx";
-const char *password = "xxxxx";
+#define p_temp 13
 
 extern struct ConfigSettingsStruct ConfigSettings;
 extern struct ConfigPanel cfgPanel;
@@ -41,10 +48,15 @@ byte activeProgram = TEMP;
 boolean forceDisplay = true;
 // TODO get this from config ?
 byte activeBrightMode = 1;
-byte currentTemp = 0;
+int currentTemp, temp = 0;
 // Local Port to Listen For UDP Packets
 uint16_t localPort;
+
 /********Objects******/
+/*Temp Object */
+OneWire oneWire(p_temp);
+DallasTemperature sensor(&oneWire);
+
 /*Panel*/
 FrekvensPanel panel(p_latch, p_clock, p_data);
 /*Button*/
@@ -57,6 +69,8 @@ Quadrant SouthEast(SE);
 Quadrant NorthWest(NW);
 
 static esp8266::polledTimeout::periodicMs updateBrightness(15000);
+static esp8266::polledTimeout::periodicMs updateTemp(10000);
+
 int rest;
 
 void setProgram(int program)
@@ -80,43 +94,60 @@ void buttonHandler(int id, int state)
     }
   }
 }
-// TODO return Temp from sensor
-byte getTemp()
-{
-  return 20;
-}
-
 void setup()
 {
+
   Serial.begin(115200);
+  Serial.println("/////////STARTUP //////////////");
+  if (!SPIFFS.begin())
+  {
+    return;
+  }
+  loadConfigPanel();
+
+  if (!loadConfig())
+  {
+  }
+  else
+  {
+    configOK = true;
+  }
+
+  if (configOK)
+  {
+    Serial.println("Config OK");
+    if (!setupSTAWifi())
+    {
+      setupWifiAP();
+      modeWiFi = "AP";
+    }
+  }
+  else
+  {
+    Serial.println("Conf KO set AP");
+    setupWifiAP();
+    modeWiFi = "AP";
+  }
+
+  initWebServer();
   // Input for buttons
   pinMode(p_btn1, INPUT_PULLUP);
   pinMode(p_btn2, INPUT_PULLUP);
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
   button1.attachHandler(buttonHandler);
   button2.attachHandler(buttonHandler);
-  /* Explicitly set the ESP8266 to be a WiFi-client, otherwise, it by default,
-     would try to act as both a client and an access-point and could cause
-     network-issues with your other WiFi-devices on your WiFi-network. */
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-  }
-  // Initialise Temperature;
-  currentTemp = getTemp();
 
   // Initialise panel Quadrants
   NorthWest.begin(&panel, &Serial);
   NorthEast.begin(&panel, &Serial);
   SouthWest.begin(&panel, &Serial);
   SouthEast.begin(&panel, &Serial);
-  //TODO configure default brightness
-  analogWrite(p_ena, 1000);
+  // Initialise temp sensor
+  sensor.begin();
+  // Initialise Temperature;
+  temp = getTemp(sensor);
+
+  rest = analogRead(p_photo);
+  analogWrite(p_ena, computebrightness(rest));
   analogRead(p_photo);
   panel.clear();
 
@@ -126,11 +157,13 @@ void setup()
   //Set Sync Intervals
   setSyncInterval(45);
 }
-void displayTemp(byte temp)
+void displayTemp(int temp)
 {
   panel.clear();
   panel.setTextSize(0);
   panel.setCursor(2, 4);
+  Serial.print("In disp TEMP value is");
+  Serial.print(temp);
   panel.print(temp);
   panel.drawCircle(14, 3, 1, 1);
 }
@@ -144,6 +177,16 @@ void digitalClockDisplay()
 
 void loop()
 {
+  webServerHandleClient();
+  if (modeWiFi == "STA")
+  {
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      // we've lost the connection, so we need to reconnect
+      setupSTAWifi();
+    }
+  }
+  
   rest = analogRead(p_photo);
   if (updateBrightness)
   {
@@ -152,58 +195,62 @@ void loop()
     Serial.println(rest);
     Serial.print("Computed value is :");
     Serial.println(computebrightness(rest));
-    analogWrite(p_ena,computebrightness(rest));
+    analogWrite(p_ena, computebrightness(rest));
   }
 
-byte temp;
-panel.scan();
-static time_t prevDisplay = 0;
-timeStatus_t ts = timeStatus();
-utc = now();
-button1.scan();
-button2.scan();
+  panel.scan();
+  static time_t prevDisplay = 0;
+  timeStatus_t ts = timeStatus();
+  utc = now();
+  button1.scan();
+  button2.scan();
 
-switch (activeProgram)
-{
-case HOUR:
-  switch (ts)
+  switch (activeProgram)
   {
-  case timeNeedsSync:
-  case timeSet:
-    //update the display only if time has changed
-    if (now() != prevDisplay)
+  case HOUR:
+    switch (ts)
     {
-      prevDisplay = now();
-      digitalClockDisplay();
-      tmElements_t tm;
-      breakTime(now(), tm);
-      if (ts == timeNeedsSync)
+    case timeNeedsSync:
+    case timeSet:
+      //update the display only if time has changed
+      if (now() != prevDisplay)
       {
-        // TODO handle need of sync
+        prevDisplay = now();
+        digitalClockDisplay();
+        tmElements_t tm;
+        breakTime(now(), tm);
+        if (ts == timeNeedsSync)
+        {
+          // TODO handle need of sync
+        }
       }
+      break;
+    case timeNotSet:
+      // TODO display <No Sync> If Time Not Displayed
+      Serial.println("/!\\Time NOT SET /!\\");
+      now();
+      panel.clear();
+      panel.setCursor(2, 5);
+      panel.print("-- --");
+      delay(3000);
     }
+    forceDisplay = false;
     break;
-  case timeNotSet:
-    // TODO display <No Sync> If Time Not Displayed
-    Serial.println("/!\\Time NOT SET /!\\");
-    now();
-    delay(3000);
+  case TEMP:
+    if (updateTemp) // if temp refresh interval elapsed
+    {
+      temp = getTemp(sensor);
+    }
+    if ((temp != currentTemp) || forceDisplay)
+    {
+      currentTemp = temp;
+      displayTemp(temp);
+    }
+    else
+    {
+      //NOPE
+    }
+    forceDisplay = false;
+    break;
   }
-  forceDisplay = false;
-  break;
-case TEMP:
-  temp = getTemp();
-  if ((temp != currentTemp) || forceDisplay)
-  {
-    currentTemp = temp;
-    displayTemp(currentTemp);
-    Serial.println("Redraw temp since it changed or force!");
-  }
-  else
-  {
-    // Serial.println("No temp changed, no redraw");
-  }
-  forceDisplay = false;
-  break;
-}
 }

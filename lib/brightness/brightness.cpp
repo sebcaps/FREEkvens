@@ -1,7 +1,7 @@
 #include "brightness.h"
 #include <Arduino.h>
-#define outMin 1023
-#define outMax 800
+#define outMin 1022
+#define outMax 900
 #define inMin 0
 #define inMax 1024
 /*!

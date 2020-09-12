@@ -1,3 +1,6 @@
+#ifndef __CONFIG_H
+#define __CONFIG_H
+
 #include <Arduino.h>
 
 #define VERSION "v0.1a"
@@ -26,3 +29,5 @@ struct ConfigPanel
 IPAddress parse_ip_address(const char *str);
 bool loadConfig();
 bool loadConfigPanel();
+
+#endif

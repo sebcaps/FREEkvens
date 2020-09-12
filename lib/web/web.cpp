@@ -9,12 +9,12 @@
 extern struct ConfigSettingsStruct ConfigSettings;
 extern struct ConfigPanel cfgPanel;
 
-extern String text ;
-extern int sizeText;
-extern int scrollText;
-extern int xText;
-extern int yText;
-extern int light;
+String text ="";
+int sizeText=0;
+int scrollText=0;
+int xText=0;
+int yText=0;
+int light=0;
 
 ESP8266WebServer serverWeb(80);
 
