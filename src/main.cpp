@@ -20,6 +20,7 @@
 #include "config.h"
 #include "web.h"
 #include "wifi.h"
+#include <ArduinoOTA.h>
 
 #define p_ena 14
 #define p_data 12
@@ -96,9 +97,7 @@ void buttonHandler(int id, int state)
 }
 void setup()
 {
-
   Serial.begin(115200);
-  Serial.println("/////////STARTUP //////////////");
   if (!SPIFFS.begin())
   {
     return;
@@ -150,12 +149,14 @@ void setup()
   analogWrite(p_ena, computebrightness(rest));
   analogRead(p_photo);
   panel.clear();
-
+  // Initialisation for NTP
   localPort = random(1024, 65535);
   Udp.begin(localPort);
   setSyncProvider(getNtpTime);
   //Set Sync Intervals
   setSyncInterval(45);
+  //Initialisation for OTA
+  ArduinoOTA.begin();
 }
 void displayTemp(int temp)
 {
@@ -178,6 +179,7 @@ void digitalClockDisplay()
 void loop()
 {
   webServerHandleClient();
+  ArduinoOTA.handle();
   if (modeWiFi == "STA")
   {
     if (WiFi.status() != WL_CONNECTED)
@@ -186,14 +188,14 @@ void loop()
       setupSTAWifi();
     }
   }
-  
-  rest = analogRead(p_photo);
+
   if (updateBrightness)
   {
     Serial.println("Will update brightness");
     Serial.print("Read value is :");
     Serial.println(rest);
     Serial.print("Computed value is :");
+    rest = analogRead(p_photo);
     Serial.println(computebrightness(rest));
     analogWrite(p_ena, computebrightness(rest));
   }
