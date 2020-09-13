@@ -98,7 +98,7 @@ void buttonHandler(int id, int state)
 void setup()
 {
   Serial.begin(115200);
-  if (!SPIFFS.begin())
+  if (!LittleFS.begin())
   {
     return;
   }

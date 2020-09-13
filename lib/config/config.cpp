@@ -3,6 +3,7 @@
 #include "config.h"
 #include "ArduinoJson.h"
 
+
 ConfigSettingsStruct ConfigSettings;
 ConfigPanel cfgPanel;
 
@@ -75,7 +76,7 @@ bool loadConfig() {
 
 bool loadConfigPanel() {
   Serial.println("LOAD CONFIG PANEl");
-  File panelFile = SPIFFS.open("/config/panel.json", "r+");
+  File panelFile = LittleFS.open("/config/panel.json", "r+");
   if (!panelFile) {
     return false;
   }

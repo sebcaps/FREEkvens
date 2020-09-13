@@ -8,8 +8,6 @@ extern String modeWiFi;
 
 void setupWifiAP()
 {
-  Serial.println("MY IP IS :");
-  Serial.println(WiFi.softAPIP());
   WiFi.mode(WIFI_AP);
   WiFi.disconnect();
 

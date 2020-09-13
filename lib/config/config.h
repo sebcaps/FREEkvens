@@ -2,8 +2,8 @@
 #define __CONFIG_H
 
 #include <Arduino.h>
-
-#define VERSION "v0.1a"
+#include "LittleFS.h"
+#define VERSION "v1.0"
 
 struct ConfigSettingsStruct
 {
