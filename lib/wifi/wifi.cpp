@@ -61,5 +61,6 @@ bool setupSTAWifi()
     }
     delay(250);
   }
+
   return true;
 }

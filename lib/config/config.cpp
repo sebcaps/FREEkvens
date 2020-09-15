@@ -3,39 +3,47 @@
 #include "config.h"
 #include "ArduinoJson.h"
 
-
 ConfigSettingsStruct ConfigSettings;
 ConfigPanel cfgPanel;
 
-IPAddress parse_ip_address(const char *str) {
-    IPAddress result;    
-    int index = 0;
+IPAddress parse_ip_address(const char *str)
+{
+  IPAddress result;
+  int index = 0;
 
-    result[0] = 0;
-    while (*str) {
-        if (isdigit((unsigned char)*str)) {
-            result[index] *= 10;
-            result[index] += *str - '0';
-        } else {
-            index++;
-            if(index<4) {
-              result[index] = 0;
-            }
-        }
-        str++;
+  result[0] = 0;
+  while (*str)
+  {
+    if (isdigit((unsigned char)*str))
+    {
+      result[index] *= 10;
+      result[index] += *str - '0';
     }
-    
-    return result;
+    else
+    {
+      index++;
+      if (index < 4)
+      {
+        result[index] = 0;
+      }
+    }
+    str++;
+  }
+
+  return result;
 }
 
-bool loadConfig() {
-  File configFile = SPIFFS.open("/config/config.json", "r+");
-  if (!configFile) {
+bool loadConfig()
+{
+  File configFile = LittleFS.open("/config/config.json", "r+");
+  if (!configFile)
+  {
     return false;
   }
 
   size_t size = configFile.size();
-  if (size > 1024) {
+  if (size > 1024)
+  {
     return false;
   }
 
@@ -48,8 +56,8 @@ bool loadConfig() {
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, buf.get());
 
-
-  if (doc.isNull()) {
+  if (doc.isNull())
+  {
     return false;
   }
 
@@ -68,21 +76,24 @@ bool loadConfig() {
   char gw_[30];
   strcpy(gw_, doc["gw"]);
   ConfigSettings.ipGW = String(gw_);
-  
+
   configFile.close();
-    
-    return true;
+
+  return true;
 }
 
-bool loadConfigPanel() {
-  Serial.println("LOAD CONFIG PANEl");
+bool loadConfigPanel()
+{
+
   File panelFile = LittleFS.open("/config/panel.json", "r+");
-  if (!panelFile) {
+  if (!panelFile)
+  {
     return false;
   }
 
   size_t size = panelFile.size();
-  if (size > 1024) {
+  if (size > 1024)
+  {
     return false;
   }
 
@@ -94,11 +105,11 @@ bool loadConfigPanel() {
   DynamicJsonDocument doc(1024);
   deserializeJson(doc, buf.get());
 
-
-  if (doc.isNull()) {
+  if (doc.isNull())
+  {
     return false;
   }
-  
+
   char txt_[512];
   strcpy(txt_, doc["text"]);
   cfgPanel.text = String(txt_);
@@ -118,7 +129,7 @@ bool loadConfigPanel() {
   strcpy(light_, doc["light"]);
   cfgPanel.light = String(light_);
 
-    panelFile.close();
-   
-    return true;
+  panelFile.close();
+
+  return true;
 }

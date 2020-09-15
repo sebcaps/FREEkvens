@@ -45,7 +45,7 @@ enum program
 bool configOK = false;
 String modeWiFi = "STA";
 // TODO get this from config
-byte activeProgram = TEMP;
+byte activeProgram = HOUR;
 boolean forceDisplay = true;
 // TODO get this from config ?
 byte activeBrightMode = 1;
