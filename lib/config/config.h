@@ -17,13 +17,8 @@ struct ConfigSettingsStruct
 
 struct ConfigPanel
 {
-    String text;
-    String sizeText;
-    String scrollText;
-    String xText;
-    String yText;
-    String light;
-    
+    String TimeZone;
+    String NTPServer;
 };
 
 IPAddress parse_ip_address(const char *str);

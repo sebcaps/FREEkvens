@@ -21,7 +21,6 @@
 #include "web.h"
 #include "wifi.h"
 #include <ArduinoOTA.h>
-
 #define p_ena 14
 #define p_data 12
 #define p_clock 2
@@ -50,14 +49,10 @@ boolean forceDisplay = true;
 // TODO get this from config ?
 byte activeBrightMode = 1;
 int currentTemp, temp = 0;
-// Local Port to Listen For UDP Packets
-uint16_t localPort;
-
 /********Objects******/
 /*Temp Object */
 OneWire oneWire(p_temp);
 DallasTemperature sensor(&oneWire);
-
 /*Panel*/
 FrekvensPanel panel(p_latch, p_clock, p_data);
 /*Button*/
@@ -69,9 +64,10 @@ Quadrant SouthWest(SW);
 Quadrant SouthEast(SE);
 Quadrant NorthWest(NW);
 
+/* Update brigthness every 15000ms = 15s */
 static esp8266::polledTimeout::periodicMs updateBrightness(15000);
+/* Update temperature every 10000ms = 10s */
 static esp8266::polledTimeout::periodicMs updateTemp(10000);
-
 int rest;
 
 void setProgram(int program)
@@ -106,6 +102,7 @@ void setup()
 
   if (!loadConfig())
   {
+    Serial.println("Conf not loaded ....");
   }
   else
   {
@@ -149,10 +146,21 @@ void setup()
   analogWrite(p_ena, computebrightness(rest));
   analogRead(p_photo);
   panel.clear();
-  // Initialisation for NTP
-  localPort = random(1024, 65535);
-  Udp.begin(localPort);
-  setSyncProvider(getNtpTime);
+
+  // TODO set as configuration VAR for MYTZ
+  Serial.print("NTP Server:");
+  Serial.println(cfgPanel.NTPServer);
+  configTime(MYTZ, cfgPanel.NTPServer.c_str());
+  // setSyncProvider(getNtpTime);
+  setSyncProvider(customNtp);
+  //FIX ME : is ko if no network connection...;
+  // wait until we get ntp time
+  // while (currentNow < 300000)
+  // {
+  //   currentNow = time(nullptr);
+  //   Serial.println("currentNow < 300000");
+  //   delay(10);
+  // }
   //Set Sync Intervals
   setSyncInterval(45);
   //Initialisation for OTA
@@ -170,10 +178,15 @@ void displayTemp(int temp)
 }
 void digitalClockDisplay()
 {
-  NorthWest.draw(hour(CE.toLocal(utc, &tcr)) / 10, forceDisplay);
-  NorthEast.draw(hour(CE.toLocal(utc, &tcr)) % 10, forceDisplay);
-  SouthWest.draw(minute() / 10, forceDisplay);
-  SouthEast.draw(minute() % 10, forceDisplay);
+  // NorthWest.draw(hour(CE.toLocal(utc, &tcr)) / 10, forceDisplay);
+  // NorthEast.draw(hour(CE.toLocal(utc, &tcr)) % 10, forceDisplay);
+  // SouthWest.draw(minute() / 10, forceDisplay);
+  // SouthEast.draw(minute() % 10, forceDisplay);
+  // Serial.println(localtime(&currentNow)->tm_hour);
+  NorthWest.draw(localtime(&currentNow)->tm_hour / 10, forceDisplay);
+  NorthEast.draw(localtime(&currentNow)->tm_hour % 10, forceDisplay);
+  SouthWest.draw(localtime(&currentNow)->tm_min / 10, forceDisplay);
+  SouthEast.draw(localtime(&currentNow)->tm_min % 10, forceDisplay);
 }
 
 void loop()
@@ -204,6 +217,7 @@ void loop()
   static time_t prevDisplay = 0;
   timeStatus_t ts = timeStatus();
   utc = now();
+  currentNow = now();
   button1.scan();
   button2.scan();
 

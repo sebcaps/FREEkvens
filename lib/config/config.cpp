@@ -36,8 +36,9 @@ IPAddress parse_ip_address(const char *str)
 bool loadConfig()
 {
   File configFile = LittleFS.open("/config/config.json", "r+");
+    Serial.println("In load config");
   if (!configFile)
-  {
+  {  Serial.println("!configFile");
     return false;
   }
 
@@ -78,7 +79,10 @@ bool loadConfig()
   ConfigSettings.ipGW = String(gw_);
 
   configFile.close();
-
+  Serial.println("********");
+  Serial.println("In load config");
+  Serial.println(ip_);
+  Serial.println("********");
   return true;
 }
 
@@ -109,26 +113,17 @@ bool loadConfigPanel()
   {
     return false;
   }
-
-  char txt_[512];
-  strcpy(txt_, doc["text"]);
-  cfgPanel.text = String(txt_);
-  char sz_[2];
-  strcpy(sz_, doc["sizeText"]);
-  cfgPanel.sizeText = String(sz_);
-  char scroll_[2];
-  strcpy(scroll_, doc["scrollText"]);
-  cfgPanel.scrollText = String(scroll_);
-  char x_[2];
-  strcpy(x_, doc["xText"]);
-  cfgPanel.xText = String(x_);
-  char y_[2];
-  strcpy(y_, doc["yText"]);
-  cfgPanel.yText = String(y_);
-  char light_[6];
-  strcpy(light_, doc["light"]);
-  cfgPanel.light = String(light_);
-
+  Serial.println("In Load config, reading TZ & NTP");
+  char tz_[512];
+  strcpy(tz_, doc["TimeZone"]);
+  cfgPanel.TimeZone = String(tz_);
+  char ntp_[512];
+  strcpy(ntp_, doc["NTPServer"]);
+  cfgPanel.NTPServer = String(ntp_);
+  Serial.println("//////////");
+  Serial.println(tz_);
+  Serial.println(ntp_);
+  Serial.println("//////////");
   panelFile.close();
 
   return true;

@@ -8,12 +8,8 @@
 extern struct ConfigSettingsStruct ConfigSettings;
 extern struct ConfigPanel cfgPanel;
 
-String text = "";
-int sizeText = 0;
-int scrollText = 0;
-int xText = 0;
-int yText = 0;
-int light = 0;
+String TimeZone = "";
+String NTPServer = "";
 
 ESP8266WebServer serverWeb(80);
 
@@ -42,13 +38,7 @@ const char HTTP_HEADER[] PROGMEM =
     "<a class='nav-link' href='/'>WiFi</a>"
     "</li>"
     "<li class='nav-item'>"
-    "<a class='nav-link' href='/apiweb'>WEB API</a>"
-    "</li>"
-    "<li class='nav-item'>"
-    "<a class='nav-link' href='/tools'>Tools</a>"
-    "</li>"
-    "<li class='nav-item'>"
-    "<a class='nav-link' href='#'>Help</a>"
+    "<a class='nav-link' href='/timeset'>TimeSettings</a>"
     "</li>"
     "</ul></div>"
     "</nav>";
@@ -77,51 +67,62 @@ const char HTTP_ROOT[] PROGMEM =
     "<label for='gateway'>@Gateway</label>"
     "<input type='text' class='form-control' id='gateway' name='ipGW' value='{{gw}}'>"
     "</div>"
-    "Server Port : <br>{{port}}<br><br>"
     "<button type='submit' class='btn btn-primary mb-2'name='save'>Save</button>"
     "</form>";
 
-const char HTTP_APIWEB[] PROGMEM =
+// "<div class='form-group'>"
+// "<label for='text'>TEXT</label>"
+// "<input class='form-control' id='text' type='text' name='text' value='{{text}}'>"
+// "</div>"
+// "<div class='form-group'>"
+// "<label for='size'>Size</label>"
+// "<select class='form-control' id='size' name='size'>"
+// "<option value='1' {{selMin}}>Min</option>"
+// "<option value='2' {{selMax}}>Max</option>"
+// "</select>"
+
+// "</div>"
+// "<div class='form-group'>"
+// "<label for='light'>Light</label>"
+// "<input class='form-control' id='light' maxlength='4' inputmode='numeric' name='light' value='{{light}}'>"
+// "</div>"
+// "<div class='form-group'>"
+// "<label for='scroll'>Scroll</label>"
+// "<select class='form-control' id='scroll' name='scroll'>"
+// "<option value='1' {{scrollOui}}>Oui</option>"
+// "<option value='0' {{scrollNon}}>Non</option>"
+// "</select>"
+const char HTTP_TIMEWEB[] PROGMEM =
     "<h1>API Web</h1>"
     "<div class='row justify-content-md-center' >"
     "<div class='col-sm-6'><form method='post' action='savepanel'>"
-    "<div class='form-group'>"
-    "<label for='text'>TEXT</label>"
-    "<input class='form-control' id='text' type='text' name='text' value='{{text}}'>"
-    "</div>"
-    "<div class='form-group'>"
-    "<label for='size'>Size</label>"
-    "<select class='form-control' id='size' name='size'>"
-    "<option value='1' {{selMin}}>Min</option>"
-    "<option value='2' {{selMax}}>Max</option>"
+    "<div class='form-group>"
+    "<label for='selectTZ'>Fuseau horaire</label>"
+    "<select name='selectTZ' id='selectTZ' class='form-control' placeholder='' aria-describedby='selectTZ'>"
+    "<option value='Europe_Paris' {{Paris}}>Europe_Paris</option>"
+    "<option value='Europe_London' {{London}}>Europe_London</option>"
+    "<option value='Africa_Niame' {{Niame}}>Africa_Niame</option>"
+    "<option value='America_New_York' {{NewYork}}>America_New_York</option>"
+    "<option value='Asia_Seoul' {{Seoul}}>Asia_Seoul</option>"
     "</select>"
-
     "</div>"
     "<div class='form-group'>"
-    "<label for='light'>Light</label>"
-    "<input class='form-control' id='light' maxlength='4' inputmode='numeric' name='light' value='{{light}}'>"
-    "</div>"
-    "<div class='form-group'>"
-    "<label for='scroll'>Scroll</label>"
-    "<select class='form-control' id='scroll' name='scroll'>"
-    "<option value='1' {{scrollOui}}>Oui</option>"
-    "<option value='0' {{scrollNon}}>Non</option>"
+    "<label for='NTPServerZone'>Fuseau horaire</label>"
+    "<select name='NTPServerZone' id='NTPServerZone' class='form-control'"
+    "aria-describedby='NTPServerZone'>"
+    "<option value='pool.ntp.org' {{NTP_POOL}}>pool.ntp.org</option>"
+    "<option value='asia.pool.ntp.org' {{NTP_ASIA}}>asia.pool.ntp.org</option>"
+    "<option value='europe.pool.ntp.org' {{NTP_EUR}}>europe.pool.ntp.org</option>"
+    "<option value='oceania.pool.ntp.org {{NTP_OCEA}}>oceania.pool.ntp.org</option>"
+    "<option value='south-america.pool.ntp.org' {{NTP_SAMCA}}>south-america.pool.ntp.org</option>"
     "</select>"
-
-    "</div>"
-    "<div class='form-group'>"
-    "<label for='posx'>X</label>"
-    "<input class='form-control' id='posx' type='text' inputmode='numeric' name='x' value='{{xText}}'>"
-    "</div>"
-    "<div class='form-group'>"
-    "<label for='posy'>Y</label>"
-    "<input type='text' class='form-control' id='posy' inputmode='numeric' name='y' value='{{yText}}'>"
     "</div>"
     "<button type='submit' class='btn btn-primary mb-2'name='save'>Refresh</button>"
     "</form>";
 
 void initWebServer()
 {
+  Serial.println("In initWebServer");
   serverWeb.serveStatic("/web/js/jquery-min.js", LittleFS, "/web/js/jquery-min.js");
   serverWeb.serveStatic("/web/js/functions.js", LittleFS, "/web/js/functions.js");
   serverWeb.serveStatic("/web/js/bootstrap.min.js", LittleFS, "/web/js/bootstrap.min.js");
@@ -134,14 +135,12 @@ void initWebServer()
   serverWeb.on("/", handleRoot);
   serverWeb.on("/save", HTTP_POST, handleSaveConfig);
   serverWeb.on("/savepanel", HTTP_POST, handleSavePanel);
-  serverWeb.on("/api", HTTP_GET, handleAPI);
-  serverWeb.on("/apiweb", handleAPIWeb);
-  serverWeb.on("/tools", handleTools);
+  serverWeb.on("/timeset", handleTimeSettings);
+
   serverWeb.on("/reboot", handleReboot);
-  serverWeb.on("/fsbrowser", handleFSbrowser);
-  serverWeb.on("/readFile", handleReadfile);
   serverWeb.onNotFound(handleNotFound);
   serverWeb.begin();
+  Serial.println("Web Server Started");
 }
 
 void handleNotFound()
@@ -164,81 +163,104 @@ void handleNotFound()
   serverWeb.send(404, F("text/plain"), message);
 }
 
-void handleAPI()
+void handleTimeSettings()
 {
-
-  if (!serverWeb.hasArg("text"))
-  {
-    serverWeb.send(500, "text/plain", "BAD ARGS");
-    return;
-  }
-
-  text = serverWeb.arg("text");
-  sizeText = serverWeb.arg("size").toInt();
-  scrollText = serverWeb.arg("scroll").toInt();
-  xText = serverWeb.arg("x").toInt();
-  yText = serverWeb.arg("y").toInt();
-  light = serverWeb.arg("light").toInt();
-
-  String configPanel;
-  configPanel = "{\"text\":\"" + text + "\",\"sizeText\":\"" + sizeText + "\",\"scrollText\":\"" + scrollText + "\",\"xText\":\"" + xText + "\",\"yText\":\"" + yText + "\",\"light\":\"" + light + "\"}";
-  StaticJsonDocument<512> jsonBuffer;
-  DynamicJsonDocument doc(1024);
-  deserializeJson(doc, configPanel);
-
-  File panelFile = LittleFS.open("/config/panel.json", "w");
-  if (!panelFile)
-  {
-  }
-  else
-  {
-    serializeJson(doc, panelFile);
-  }
-
-  serverWeb.send(200, F("text/html"), "OK");
-}
-
-void handleAPIWeb()
-{
-
+  Serial.println("In handleTimeSettings");
   String result;
   result += F("<html>");
   result += FPSTR(HTTP_HEADER);
-  result += FPSTR(HTTP_APIWEB);
+  result += FPSTR(HTTP_TIMEWEB);
   result += F("</html>");
   loadConfigPanel();
+  Serial.print("Read file in handleTImeSettings : ");
+  Serial.println(cfgPanel.NTPServer);
+  if (cfgPanel.NTPServer == "pool.ntp.org")
+  {
+    result.replace("{{NTP_POOL}}", "Selected");
+    result.replace("{{NTP_ASIA}}", "");
+    result.replace("{{NTP_EUR}}", "");
+    result.replace("{{NTP_OCEA}}", "");
+    result.replace("{{NTP_SAMCA}}", "");
+  }
+  else if (cfgPanel.NTPServer == "asia.pool.ntp.org")
+  {
+    result.replace("{{NTP_POOL}}", "");
+    result.replace("{{NTP_ASIA}}", "Selected");
+    result.replace("{{NTP_EUR}}", "");
+    result.replace("{{NTP_OCEA}}", "");
+    result.replace("{{NTP_SAMCA}}", "");
+  }
+  else if (cfgPanel.NTPServer == "europe.pool.ntp.org")
+  {
+    result.replace("{{NTP_POOL}}", "");
+    result.replace("{{NTP_ASIA}}", "");
+    result.replace("{{NTP_EUR}}", "Selected");
+    result.replace("{{NTP_OCEA}}", "");
+    result.replace("{{NTP_SAMCA}}", "");
+  }
+  else if (cfgPanel.NTPServer == "oceania.pool.ntp.org")
+  {
+    result.replace("{{NTP_POOL}}", "");
+    result.replace("{{NTP_ASIA}}", "");
+    result.replace("{{NTP_EUR}}", "");
+    result.replace("{{NTP_OCEA}}", "Selected");
+    result.replace("{{NTP_SAMCA}}", "");
+  }
+  else if (cfgPanel.NTPServer == "south-america.pool.ntp.org")
+  {
+    result.replace("{{NTP_POOL}}", "");
+    result.replace("{{NTP_ASIA}}", "");
+    result.replace("{{NTP_EUR}}", "");
+    result.replace("{{NTP_OCEA}}", "");
+    result.replace("{{NTP_SAMCA}}", "Selected");
+  }
 
-  result.replace("{{text}}", cfgPanel.text);
-  if (cfgPanel.sizeText == "1")
+  if (cfgPanel.TimeZone == "Europe_Paris")
   {
-    result.replace("{{selMin}}", "Selected");
-    result.replace("{{selMax}}", "");
+    result.replace("{{Paris}}", "Selected");
+    result.replace("{{London}}", "");
+    result.replace("{{Niame}}", "");
+    result.replace("{{NewYork}}", "");
+    result.replace("{{Seoul}}", "");
   }
-  else if (cfgPanel.sizeText == "2")
+  else if (cfgPanel.TimeZone == "Europe_London")
   {
-    result.replace("{{selMin}}", "");
-    result.replace("{{selMax}}", "Selected");
+    result.replace("{{Paris}}", "");
+    result.replace("{{London}}", "Selected");
+    result.replace("{{Niame}}", "");
+    result.replace("{{NewYork}}", "");
+    result.replace("{{Seoul}}", "");
   }
-  if (cfgPanel.scrollText == "1")
+  else if (cfgPanel.NTPServer == "Africa_Niame")
   {
-    result.replace("{{scrollOui}}", "Selected");
-    result.replace("{{scrollNon}}", "");
+    result.replace("{{Paris}}", "");
+    result.replace("{{London}}", "");
+    result.replace("{{Niame}}", "Selected");
+    result.replace("{{NewYork}}", "");
+    result.replace("{{Seoul}}", "");
   }
-  else if (cfgPanel.scrollText == "0")
+  else if (cfgPanel.NTPServer == "America_New_York")
   {
-    result.replace("{{scrollOui}}", "");
-    result.replace("{{scrollNon}}", "Selected");
+    result.replace("{{Paris}}", "");
+    result.replace("{{London}}", "");
+    result.replace("{{Niame}}", "");
+    result.replace("{{NewYork}}", "America_New_York");
+    result.replace("{{Seoul}}", "");
   }
-  result.replace("{{scrollText}}", cfgPanel.scrollText);
-  result.replace("{{xText}}", cfgPanel.xText);
-  result.replace("{{yText}}", cfgPanel.yText);
-  result.replace("{{light}}", cfgPanel.light);
-
+  else if (cfgPanel.NTPServer == "Asia_Seoul")
+  {
+    result.replace("{{Paris}}", "");
+    result.replace("{{London}}", "");
+    result.replace("{{Niame}}", "");
+    result.replace("{{NewYork}}", "");
+    result.replace("{{Seoul}}", "Selected");
+  }
   serverWeb.send(200, F("text/html"), result);
 }
 
 void handleRoot()
 {
+  Serial.println("ROOOT CALLED");
   String result;
   result += F("<html>");
   result += FPSTR(HTTP_HEADER);
@@ -256,21 +278,19 @@ void handleRoot()
 
 void handleSavePanel()
 {
-  if (!serverWeb.hasArg("text"))
+  if (!serverWeb.hasArg("selectTZ"))
   {
     serverWeb.send(500, "text/plain", "BAD ARGS");
     return;
   }
 
   String configPanel;
-  text = serverWeb.arg("text");
-  sizeText = serverWeb.arg("size").toInt();
-  scrollText = serverWeb.arg("scroll").toInt();
-  xText = serverWeb.arg("x").toInt();
-  yText = serverWeb.arg("y").toInt();
-  light = serverWeb.arg("light").toInt();
+  TimeZone = serverWeb.arg("selectTZ");
+  NTPServer = serverWeb.arg("NTPServerZone");
+  Serial.print("in SavePanel");
 
-  configPanel = "{\"text\":\"" + text + "\",\"sizeText\":\"" + sizeText + "\",\"scrollText\":\"" + scrollText + "\",\"xText\":\"" + xText + "\",\"yText\":\"" + yText + "\",\"light\":\"" + light + "\"}";
+
+  configPanel = "{\"TimeZone\":\"" + TimeZone + "\",\"NTPServer\":\"" + NTPServer + "\"}";
   Serial.println(configPanel);
   StaticJsonDocument<512> jsonBuffer;
   DynamicJsonDocument doc(1024);
@@ -284,7 +304,7 @@ void handleSavePanel()
   {
     serializeJson(doc, panelFile);
   }
-  serverWeb.sendHeader(F("Location"), F("/apiweb"));
+  serverWeb.sendHeader(F("Location"), F("/timeset"));
   serverWeb.send(303);
 }
 
@@ -328,8 +348,6 @@ void handleTools()
   result += FPSTR(HTTP_HEADER);
   result += F("<h1>Tools</h1>");
   result += F("<div class='btn-group-vertical'>");
-  result += F("<a href='/fsbrowser' class='btn btn-primary mb-2'>FSbrowser</button>");
-  result += F("<a href='/update' class='btn btn-primary mb-2'>Update</button>");
   result += F("<a href='/reboot' class='btn btn-primary mb-2'>Reboot</button>");
   result += F("</div></body></html>");
 

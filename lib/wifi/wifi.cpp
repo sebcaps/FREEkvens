@@ -10,7 +10,7 @@ void setupWifiAP()
 {
   WiFi.mode(WIFI_AP);
   WiFi.disconnect();
-
+  Serial.println("In setupWifiAP");
   uint8_t mac[WL_MAC_ADDR_LENGTH];
   WiFi.softAPmacAddress(mac);
   String macID = String(mac[WL_MAC_ADDR_LENGTH - 2], HEX) +
@@ -31,6 +31,8 @@ void setupWifiAP()
     WIFIPASS[i] = WIFIPASSSTR.charAt(i);
 
   WiFi.softAP(AP_NameChar, WIFIPASS);
+  Serial.println("In AP MODE");
+  Serial.println(WiFi.softAPIP());
 }
 
 bool setupSTAWifi()
@@ -61,6 +63,7 @@ bool setupSTAWifi()
     }
     delay(250);
   }
-
+  Serial.println("In setupSTAWifi MODE");
+  Serial.println(ip_address);
   return true;
 }

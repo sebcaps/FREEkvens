@@ -6,5 +6,5 @@ int getTemp(DallasTemperature sensor)
     //assuming there is only one sensor on the bus...
     Serial.print("Read Temp :");
     Serial.println(sensor.getTempCByIndex(0));
-    return sensor.getTempCByIndex(0);
+    return round(sensor.getTempCByIndex(0));
 }
