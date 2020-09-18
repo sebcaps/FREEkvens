@@ -21,6 +21,8 @@
 #include "web.h"
 #include "wifi.h"
 #include <ArduinoOTA.h>
+#include "webUtils.h"
+
 #define p_ena 14
 #define p_data 12
 #define p_clock 2
@@ -148,12 +150,12 @@ void setup()
   panel.clear();
 
   // TODO set as configuration VAR for MYTZ
-  Serial.print("NTP Server:");
-  Serial.println(cfgPanel.NTPServer);
-  configTime(MYTZ, cfgPanel.NTPServer.c_str());
+  // Serial.println(NTPServerList[cfgPanel.NTPServer.toInt()]);
+  configTime(MYTZ,NTPServerList[cfgPanel.NTPServer.toInt()]) ;
   // setSyncProvider(getNtpTime);
   setSyncProvider(customNtp);
-  //FIX ME : is ko if no network connection...;
+
+  // FIXME : KO... if no network connection...;
   // wait until we get ntp time
   // while (currentNow < 300000)
   // {
@@ -161,6 +163,7 @@ void setup()
   //   Serial.println("currentNow < 300000");
   //   delay(10);
   // }
+
   //Set Sync Intervals
   setSyncInterval(45);
   //Initialisation for OTA

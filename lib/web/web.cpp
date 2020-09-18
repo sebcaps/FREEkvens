@@ -5,6 +5,7 @@
 #include "web.h"
 #include "config.h"
 
+
 extern struct ConfigSettingsStruct ConfigSettings;
 extern struct ConfigPanel cfgPanel;
 
@@ -69,56 +70,36 @@ const char HTTP_ROOT[] PROGMEM =
     "</div>"
     "<button type='submit' class='btn btn-primary mb-2'name='save'>Save</button>"
     "</form>";
-
-// "<div class='form-group'>"
-// "<label for='text'>TEXT</label>"
-// "<input class='form-control' id='text' type='text' name='text' value='{{text}}'>"
-// "</div>"
-// "<div class='form-group'>"
-// "<label for='size'>Size</label>"
-// "<select class='form-control' id='size' name='size'>"
-// "<option value='1' {{selMin}}>Min</option>"
-// "<option value='2' {{selMax}}>Max</option>"
-// "</select>"
-
-// "</div>"
-// "<div class='form-group'>"
-// "<label for='light'>Light</label>"
-// "<input class='form-control' id='light' maxlength='4' inputmode='numeric' name='light' value='{{light}}'>"
-// "</div>"
-// "<div class='form-group'>"
-// "<label for='scroll'>Scroll</label>"
-// "<select class='form-control' id='scroll' name='scroll'>"
-// "<option value='1' {{scrollOui}}>Oui</option>"
-// "<option value='0' {{scrollNon}}>Non</option>"
-// "</select>"
+    
 const char HTTP_TIMEWEB[] PROGMEM =
     "<h1>API Web</h1>"
     "<div class='row justify-content-md-center' >"
     "<div class='col-sm-6'><form method='post' action='savepanel'>"
     "<div class='form-group>"
     "<label for='selectTZ'>Fuseau horaire</label>"
-    "<select name='selectTZ' id='selectTZ' class='form-control' placeholder='' aria-describedby='selectTZ'>"
-    "<option value='Europe_Paris' {{Paris}}>Europe_Paris</option>"
-    "<option value='Europe_London' {{London}}>Europe_London</option>"
-    "<option value='Africa_Niame' {{Niame}}>Africa_Niame</option>"
-    "<option value='America_New_York' {{NewYork}}>America_New_York</option>"
-    "<option value='Asia_Seoul' {{Seoul}}>Asia_Seoul</option>"
+    "<select name='selectTZ' id='selectTZ' class='form-control' aria-describedby='selectTZ'>"
+    "<option value=0 >Europe_Paris</option>"
+    "<option value=1 >Europe_London</option>"
+    "<option value=2 >Africa_Niame</option>"
+    "<option value=3 >America_New_York</option>"
+    "<option value=4 >Asia_Seoul</option>"
     "</select>"
     "</div>"
     "<div class='form-group'>"
-    "<label for='NTPServerZone'>Fuseau horaire</label>"
-    "<select name='NTPServerZone' id='NTPServerZone' class='form-control'"
-    "aria-describedby='NTPServerZone'>"
-    "<option value='pool.ntp.org' {{NTP_POOL}}>pool.ntp.org</option>"
-    "<option value='asia.pool.ntp.org' {{NTP_ASIA}}>asia.pool.ntp.org</option>"
-    "<option value='europe.pool.ntp.org' {{NTP_EUR}}>europe.pool.ntp.org</option>"
-    "<option value='oceania.pool.ntp.org {{NTP_OCEA}}>oceania.pool.ntp.org</option>"
-    "<option value='south-america.pool.ntp.org' {{NTP_SAMCA}}>south-america.pool.ntp.org</option>"
+    "<label for='selectNTP'>Serveur NTP</label>"
+    "<select name='selectNTP' id='selectNTP' class='form-control' aria-describedby='selectNTP'>"
+    "<option value=0>pool.ntp.org</option>"
+    "<option value=1>asia.pool.ntp.org</option>"
+    "<option value=2>europe.pool.ntp.org</option>"
+    "<option value=3>oceania.pool.ntp.org</option>"
+    "<option value=4>south-america.pool.ntp.org</option>"
     "</select>"
     "</div>"
     "<button type='submit' class='btn btn-primary mb-2'name='save'>Refresh</button>"
-    "</form>";
+    "</form>"
+    "<input type='text' id='TZHidden' value='{{selTZ}}'>"
+    "<input type='text' id='NTPHidden' value='{{selNTP}}'>"
+    "<script>setSelectValues()</script>";
 
 void initWebServer()
 {
@@ -172,89 +153,16 @@ void handleTimeSettings()
   result += FPSTR(HTTP_TIMEWEB);
   result += F("</html>");
   loadConfigPanel();
-  Serial.print("Read file in handleTImeSettings : ");
-  Serial.println(cfgPanel.NTPServer);
-  if (cfgPanel.NTPServer == "pool.ntp.org")
-  {
-    result.replace("{{NTP_POOL}}", "Selected");
-    result.replace("{{NTP_ASIA}}", "");
-    result.replace("{{NTP_EUR}}", "");
-    result.replace("{{NTP_OCEA}}", "");
-    result.replace("{{NTP_SAMCA}}", "");
-  }
-  else if (cfgPanel.NTPServer == "asia.pool.ntp.org")
-  {
-    result.replace("{{NTP_POOL}}", "");
-    result.replace("{{NTP_ASIA}}", "Selected");
-    result.replace("{{NTP_EUR}}", "");
-    result.replace("{{NTP_OCEA}}", "");
-    result.replace("{{NTP_SAMCA}}", "");
-  }
-  else if (cfgPanel.NTPServer == "europe.pool.ntp.org")
-  {
-    result.replace("{{NTP_POOL}}", "");
-    result.replace("{{NTP_ASIA}}", "");
-    result.replace("{{NTP_EUR}}", "Selected");
-    result.replace("{{NTP_OCEA}}", "");
-    result.replace("{{NTP_SAMCA}}", "");
-  }
-  else if (cfgPanel.NTPServer == "oceania.pool.ntp.org")
-  {
-    result.replace("{{NTP_POOL}}", "");
-    result.replace("{{NTP_ASIA}}", "");
-    result.replace("{{NTP_EUR}}", "");
-    result.replace("{{NTP_OCEA}}", "Selected");
-    result.replace("{{NTP_SAMCA}}", "");
-  }
-  else if (cfgPanel.NTPServer == "south-america.pool.ntp.org")
-  {
-    result.replace("{{NTP_POOL}}", "");
-    result.replace("{{NTP_ASIA}}", "");
-    result.replace("{{NTP_EUR}}", "");
-    result.replace("{{NTP_OCEA}}", "");
-    result.replace("{{NTP_SAMCA}}", "Selected");
-  }
 
-  if (cfgPanel.TimeZone == "Europe_Paris")
-  {
-    result.replace("{{Paris}}", "Selected");
-    result.replace("{{London}}", "");
-    result.replace("{{Niame}}", "");
-    result.replace("{{NewYork}}", "");
-    result.replace("{{Seoul}}", "");
-  }
-  else if (cfgPanel.TimeZone == "Europe_London")
-  {
-    result.replace("{{Paris}}", "");
-    result.replace("{{London}}", "Selected");
-    result.replace("{{Niame}}", "");
-    result.replace("{{NewYork}}", "");
-    result.replace("{{Seoul}}", "");
-  }
-  else if (cfgPanel.NTPServer == "Africa_Niame")
-  {
-    result.replace("{{Paris}}", "");
-    result.replace("{{London}}", "");
-    result.replace("{{Niame}}", "Selected");
-    result.replace("{{NewYork}}", "");
-    result.replace("{{Seoul}}", "");
-  }
-  else if (cfgPanel.NTPServer == "America_New_York")
-  {
-    result.replace("{{Paris}}", "");
-    result.replace("{{London}}", "");
-    result.replace("{{Niame}}", "");
-    result.replace("{{NewYork}}", "America_New_York");
-    result.replace("{{Seoul}}", "");
-  }
-  else if (cfgPanel.NTPServer == "Asia_Seoul")
-  {
-    result.replace("{{Paris}}", "");
-    result.replace("{{London}}", "");
-    result.replace("{{Niame}}", "");
-    result.replace("{{NewYork}}", "");
-    result.replace("{{Seoul}}", "Selected");
-  }
+  Serial.print("Read file in handleTImeSettings TZ=: ");
+  Serial.println(cfgPanel.TimeZone);
+
+  Serial.print("Read file in handleTImeSettings NTP=: ");
+  Serial.println(cfgPanel.NTPServer);
+
+  result.replace("{{selTZ}}", cfgPanel.TimeZone);
+  result.replace("{{selNTP}}", cfgPanel.NTPServer);
+
   serverWeb.send(200, F("text/html"), result);
 }
 
@@ -286,9 +194,8 @@ void handleSavePanel()
 
   String configPanel;
   TimeZone = serverWeb.arg("selectTZ");
-  NTPServer = serverWeb.arg("NTPServerZone");
+  NTPServer = serverWeb.arg("selectNTP");
   Serial.print("in SavePanel");
-
 
   configPanel = "{\"TimeZone\":\"" + TimeZone + "\",\"NTPServer\":\"" + NTPServer + "\"}";
   Serial.println(configPanel);

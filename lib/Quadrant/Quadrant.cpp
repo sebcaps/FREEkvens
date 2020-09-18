@@ -23,7 +23,6 @@ Number seven(sevenArray, 2);
 Number eight(eightArray, 5);
 Number nine(nineArray, 5);
 
-//struct NewNumber zeroS = {4, zeroArray};
 Quadrant::Quadrant(location pos)
 {
   _quad = pos;
@@ -98,7 +97,7 @@ void Quadrant::draw(byte nombre, boolean forceDisplay)
   }
   else
   {
-    //Juste update screen
+    //Just update screen
     _panel->scan();
   }
 }
