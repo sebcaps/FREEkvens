@@ -33,8 +33,10 @@
 #define p_photo 0
 #define p_temp 13
 
-extern struct ConfigSettingsStruct ConfigSettings;
-extern struct ConfigPanel cfgPanel;
+extern struct WifiConfigStruct wifiSettings;
+extern struct TimeConfigStruct timeConfig;
+extern struct OtherConfigStruct otherConfig;
+
 enum program
 {
   HOUR,
@@ -45,12 +47,11 @@ enum program
 /********Vars******/
 bool configOK = false;
 String modeWiFi = "STA";
-// TODO get this from config
-byte activeProgram = HOUR;
+byte activeProgram;
 boolean forceDisplay = true;
-// TODO get this from config ?
-byte activeBrightMode = 1;
+time_t currentNow = now();
 int currentTemp, temp = 0;
+int bright;
 /********Objects******/
 /*Temp Object */
 OneWire oneWire(p_temp);
@@ -70,7 +71,6 @@ Quadrant NorthWest(NW);
 static esp8266::polledTimeout::periodicMs updateBrightness(15000);
 /* Update temperature every 10000ms = 10s */
 static esp8266::polledTimeout::periodicMs updateTemp(10000);
-int rest;
 
 void setProgram(int program)
 {
@@ -100,11 +100,19 @@ void setup()
   {
     return;
   }
-  loadConfigPanel();
-
-  if (!loadConfig())
+  loadTimeConfig();
+  if (loadOtherConfig())
   {
-    Serial.println("Conf not loaded ....");
+    activeProgram = otherConfig.startMode;
+  }
+  else
+  {
+    return;
+  }
+
+  if (!loadWifiConfig())
+  {
+    Serial.println("Wifi conf not loaded ....");
   }
   else
   {
@@ -144,15 +152,23 @@ void setup()
   // Initialise Temperature;
   temp = getTemp(sensor);
 
-  rest = analogRead(p_photo);
-  analogWrite(p_ena, computebrightness(rest));
-  analogRead(p_photo);
+  if (otherConfig.dynamicBrigth) // if brigthness is dynamic, 'compute it'
+  {
+    bright = analogRead(p_photo);
+    analogWrite(p_ena, computebrightness(bright));
+    analogRead(p_photo);
+  }
+  else // else set brightness to static value
+  {
+    analogWrite(p_ena, otherConfig.staticBright);
+  }
+  // clear panel ;-)
   panel.clear();
 
-  // TODO set as configuration VAR for MYTZ
+// TODO set as configuration VAR for MYTZ
+#define MYTZ TZ_Europe_Paris
   // Serial.println(NTPServerList[cfgPanel.NTPServer.toInt()]);
-  configTime(MYTZ,NTPServerList[cfgPanel.NTPServer.toInt()]) ;
-  // setSyncProvider(getNtpTime);
+  configTime(MYTZ, NTPServerList[timeConfig.NTPServer.toInt()]);
   setSyncProvider(customNtp);
 
   // FIXME : KO... if no network connection...;
@@ -181,11 +197,6 @@ void displayTemp(int temp)
 }
 void digitalClockDisplay()
 {
-  // NorthWest.draw(hour(CE.toLocal(utc, &tcr)) / 10, forceDisplay);
-  // NorthEast.draw(hour(CE.toLocal(utc, &tcr)) % 10, forceDisplay);
-  // SouthWest.draw(minute() / 10, forceDisplay);
-  // SouthEast.draw(minute() % 10, forceDisplay);
-  // Serial.println(localtime(&currentNow)->tm_hour);
   NorthWest.draw(localtime(&currentNow)->tm_hour / 10, forceDisplay);
   NorthEast.draw(localtime(&currentNow)->tm_hour % 10, forceDisplay);
   SouthWest.draw(localtime(&currentNow)->tm_min / 10, forceDisplay);
@@ -195,6 +206,11 @@ void digitalClockDisplay()
 void loop()
 {
   webServerHandleClient();
+
+  if (wifiSettings.dnsName != "")
+  {
+    ArduinoOTA.setHostname(wifiSettings.dnsName.c_str());
+  }
   ArduinoOTA.handle();
   if (modeWiFi == "STA")
   {
@@ -204,22 +220,21 @@ void loop()
       setupSTAWifi();
     }
   }
-
-  if (updateBrightness)
+  // if refresh intervall elapsed and dynamic brigthness enabled
+  if (updateBrightness && otherConfig.dynamicBrigth)
   {
     Serial.println("Will update brightness");
     Serial.print("Read value is :");
-    Serial.println(rest);
+    Serial.println(bright);
     Serial.print("Computed value is :");
-    rest = analogRead(p_photo);
-    Serial.println(computebrightness(rest));
-    analogWrite(p_ena, computebrightness(rest));
+    bright = analogRead(p_photo);
+    Serial.println(computebrightness(bright));
+    analogWrite(p_ena, computebrightness(bright));
   }
 
   panel.scan();
   static time_t prevDisplay = 0;
   timeStatus_t ts = timeStatus();
-  utc = now();
   currentNow = now();
   button1.scan();
   button2.scan();
@@ -245,7 +260,6 @@ void loop()
       }
       break;
     case timeNotSet:
-      // TODO display <No Sync> If Time Not Displayed
       Serial.println("/!\\Time NOT SET /!\\");
       now();
       panel.clear();

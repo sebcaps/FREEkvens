@@ -1,39 +1,39 @@
-function getXhr() {
-	var xhr = null;
-	if (window.XMLHttpRequest) // Firefox et autres
-		xhr = new XMLHttpRequest();
-	else if (window.ActiveXObject) { // Internet Explorer 
-		try {
-			xhr = new ActiveXObject("Msxml2.XMLHTTP");
-		} catch (e) {
-			xhr = new ActiveXObject("Microsoft.XMLHTTP");
+function getValues() {
+	$.get('http://192.168.0.17/api/time/', function (data) {
+		console.log(JSON.stringify(data));
+		$('#selectTZ').val(data.TimeZone);
+		$('#selectNTP').val(data.NTPServer);
+	});
+	$.get('http://192.168.0.17/api/wifi/', function (data) {
+		console.log(JSON.stringify(data));
+		$('#ssid').val(data.ssid);
+		$('#pass').val(data.pass);
+		$('#ip').val(data.ip);
+		$('#mask').val(data.mask);
+		$('#gateway').val(data.gw);
+		$('#dnsname').val(data.dns);
+	});
+	$.get('http://192.168.0.17/api/other/', function (data) {
+		console.log(JSON.stringify(data));
+		isChecked = data.EnableDynamicBright == "1" ? true : false
+		$('#enableDynamic').prop('checked', isChecked);
+		handleCheckbox(isChecked);
+		if (isChecked) {
+			$('#maxBright').val(data.MaxBright);
+		} else {
+			$("#staticBright").val(data.StaticBrightness)
 		}
-	} else { // XMLHttpRequest non supporté par le navigateur 
-		alert("Votre navigateur ne supporte pas les objets XMLHTTPRequest...");
-		xhr = false;
-	}
-	return xhr;
+		$('#defaultStart').val(data.StartMode)
+	});
 }
 
-function readfile(file) {
-	var xhr = getXhr();
-	xhr.onreadystatechange = function () {
-		if (xhr.readyState == 4) {
-			leselect = xhr.responseText;
-			document.getElementById("title").innerHTML = file;
-			document.getElementById("filename").value = file;
-			document.getElementById("file").innerHTML = leselect;
-		}
+function handleCheckbox(check) {
+	if (check) {
+		$("#maxBright").prop("disabled", false);
+		$("#staticBright").prop("disabled", true);
+	} else {
+		$("#maxBright").prop("disabled", true);
+		$("#staticBright").prop("disabled", false);
 	}
-	xhr.open("GET", "readFile?file=" + escape(file), true);
-	xhr.setRequestHeader('Content-Type', 'application/html');
-	xhr.send();
-}
 
-
-function setSelectValues() {
-	var TZValue = $("#TZHidden").val();
-	$('#selectTZ').val(TZValue);
-	var NTPValue = $("#NTPHidden").val();
-	$('#selectNTP').val(NTPValue);
 }

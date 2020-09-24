@@ -3,8 +3,9 @@
 #include "config.h"
 #include "ArduinoJson.h"
 
-ConfigSettingsStruct ConfigSettings;
-ConfigPanel cfgPanel;
+WifiConfigStruct wifiSettings;
+TimeConfigStruct timeConfig;
+OtherConfigStruct otherConfig;
 
 IPAddress parse_ip_address(const char *str)
 {
@@ -33,98 +34,93 @@ IPAddress parse_ip_address(const char *str)
   return result;
 }
 
-bool loadConfig()
+bool loadWifiConfig()
 {
-  File configFile = LittleFS.open("/config/config.json", "r+");
-    Serial.println("In load config");
-  if (!configFile)
-  {  Serial.println("!configFile");
+  File wifiFile = LittleFS.open("/config/wifi.json", "r+");
+  Serial.println("In loadWifiConfig");
+  if (!wifiFile)
+  {
+    Serial.println("!wifiFile");
     return false;
   }
+  const size_t capacity = JSON_OBJECT_SIZE(6) + 80;
 
-  size_t size = configFile.size();
+  size_t size = wifiFile.size();
   if (size > 1024)
   {
+    Serial.println("JSON CAPACITY ERROR !!!!");
     return false;
   }
 
-  // Allocate a buffer to store contents of the file.
-  std::unique_ptr<char[]> buf(new char[size]);
-
-  configFile.readBytes(buf.get(), size);
-
-  //StaticJsonDocument<512> jsonBuffer;
   DynamicJsonDocument doc(1024);
-  deserializeJson(doc, buf.get());
+  deserializeJson(doc, wifiFile);
 
   if (doc.isNull())
   {
     return false;
   }
 
-  char ssid_[30];
-  strcpy(ssid_, doc["ssid"]);
-  ConfigSettings.ssid = String(ssid_);
-  char pass_[30];
-  strcpy(pass_, doc["pass"]);
-  ConfigSettings.password = String(pass_);
-  char ip_[30];
-  strcpy(ip_, doc["ip"]);
-  ConfigSettings.ipAddress = String(ip_);
-  char mask_[30];
-  strcpy(mask_, doc["mask"]);
-  ConfigSettings.ipMask = String(mask_);
-  char gw_[30];
-  strcpy(gw_, doc["gw"]);
-  ConfigSettings.ipGW = String(gw_);
+  wifiSettings.ssid = doc["ssid"].as<String>();
+  wifiSettings.password = doc["pass"].as<String>();
+  wifiSettings.ipAddress = doc["ip"].as<String>();
+  wifiSettings.ipMask = doc["mask"].as<String>();
+  wifiSettings.ipGW = doc["gw"].as<String>();
+  wifiSettings.dnsName = doc["dns"].as<String>();
+  wifiFile.close();
 
-  configFile.close();
-  Serial.println("********");
-  Serial.println("In load config");
-  Serial.println(ip_);
-  Serial.println("********");
   return true;
 }
 
-bool loadConfigPanel()
+bool loadTimeConfig()
+{
+  File timeFile = LittleFS.open("/config/time.json", "r+");
+  if (!timeFile)
+  {
+    return false;
+  }
+  const size_t capacity = JSON_OBJECT_SIZE(2) + 30;
+  size_t size = timeFile.size();
+  if (size > capacity)
+  {
+    Serial.println("JSON CAPACITY ERROR !!!!");
+    return false;
+  }
+
+  DynamicJsonDocument doc(capacity);
+  deserializeJson(doc, timeFile);
+
+  timeConfig.TimeZone = doc["TimeZone"].as<String>();
+  timeConfig.NTPServer = doc["NTPServer"].as<String>();
+
+  timeFile.close();
+
+  return true;
+}
+bool loadOtherConfig()
 {
 
-  File panelFile = LittleFS.open("/config/panel.json", "r+");
-  if (!panelFile)
+  File otherFile = LittleFS.open("/config/other.json", "r+");
+  if (!otherFile)
   {
+
     return false;
   }
-
-  size_t size = panelFile.size();
-  if (size > 1024)
+  const size_t capacity = JSON_OBJECT_SIZE(4) + 70;
+  size_t size = otherFile.size();
+  if (size > capacity)
   {
+    Serial.println("JSON CAPACITY ERROR !!!!");
     return false;
   }
+  DynamicJsonDocument doc(capacity);
+  deserializeJson(doc, otherFile);
 
-  // Allocate a buffer to store contents of the file.
-  std::unique_ptr<char[]> buf(new char[size]);
+  otherConfig.dynamicBrigth = doc["EnableDynamicBright"];
+  otherConfig.maxBrigth = doc["MaxBright"];
+  otherConfig.staticBright = doc["StaticBrightness"];
+  otherConfig.startMode = doc["StartMode"];
 
-  panelFile.readBytes(buf.get(), size);
-
-  DynamicJsonDocument doc(1024);
-  deserializeJson(doc, buf.get());
-
-  if (doc.isNull())
-  {
-    return false;
-  }
-  Serial.println("In Load config, reading TZ & NTP");
-  char tz_[512];
-  strcpy(tz_, doc["TimeZone"]);
-  cfgPanel.TimeZone = String(tz_);
-  char ntp_[512];
-  strcpy(ntp_, doc["NTPServer"]);
-  cfgPanel.NTPServer = String(ntp_);
-  Serial.println("//////////");
-  Serial.println(tz_);
-  Serial.println(ntp_);
-  Serial.println("//////////");
-  panelFile.close();
+  otherFile.close();
 
   return true;
 }

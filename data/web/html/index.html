@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <script type='text/javascript' src='../js/jquery-min.js'></script>
+    <script type='text/javascript' src='../js/bootstrap.min.js'></script>
+    <script type='text/javascript' src='../js/functions.js'></script>
+    <link href='../css/bootstrap.min.css' rel='stylesheet' type='text/css' />
+    <link href='../css/style.css' rel='stylesheet' type='text/css' />
+</head>
+
+<body>
+    <nav class='navbar navbar-expand-lg navbar-light bg-light rounded'><a class='navbar-brand' href='/'><img
+                src='../img/logo.png' /> <strong>Ikea Frekvens Config </strong> 1.0
+        </a>
+        <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarNavDropdown'
+            aria-controls='navbarNavDropdown' aria-expanded='false' aria-label='Toggle navigation'>
+            <span class='navbar-toggler-icon'></span>
+        </button>
+        <div id='navbarNavDropdown' class='navbar-collapse justify-content-md-center'>
+            <ul class="nav " id="myTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="home-tab" data-toggle="tab" href="#wifi" role="tab"
+                        aria-controls="home" aria-selected="true">Wifi</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="profile-tab" data-toggle="tab" href="#time" role="tab"
+                        aria-controls="profile" aria-selected="false">Temps</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="contact-tab" data-toggle="tab" href="#conf" role="tab"
+                        aria-controls="contact" aria-selected="false">Config</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="wifi" role="tabpanel" aria-labelledby="wifi-tab">
+            <h1>Configuration WiFi</h1>
+            <div class='row justify-content-md-center'>
+                <div class='col-sm-6'>
+                    <form method='POST' action='saveWIFI'>
+                        <div class='form-group'>
+                            <label for='ssid'>SSID</label>
+                            <input class='form-control' id='ssid' type='text' name='WIFISSID'
+                                placeholder='Network Name'>
+                        </div>
+                        <div class='form-group'>
+                            <label for='pass'>Password</label>
+                            <input class='form-control' id='pass' type='password' name='WIFIpassword'
+                                placeholder='Network Password'>
+                        </div>
+                        <div class='form-group'>
+                            <label for='ip'>@IP</label>
+                            <input class='form-control' id='ip' type='text' name='ipAddress' placeholder='IP address'>
+                        </div>
+                        <div class='form-group'>
+                            <label for='mask'>@Mask</label>
+                            <input class='form-control' id='mask' type='text' name='ipMask' placeholder='IP Mask'>
+                        </div>
+                        <div class='form-group'>
+                            <label for='gateway'>@Gateway</label>
+                            <input type='text' class='form-control' id='gateway' name='ipGW'
+                                placeholder='Gateway address'>
+                        </div>
+                        <div class='form-group'>
+                            <label for='DNS'>Newtork Name</label>
+                            <input type='text' class='form-control' id='dnsname' name='dnsName'
+                                placeholder='Network name'>
+                        </div>
+                        <button type='submit' class='btn btn-primary mb-2' name='saveWIFI'>Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="time" role="tabpanel" aria-labelledby="profile-tab">
+            <h1>Configuration Temps</h1>
+            <div class='row justify-content-md-center'>
+                <div class='col-sm-6'>
+                    <form method='POST' action='saveTime'>
+                        <div class="form-group">
+                            <label for="selectTZ">Fuseau horaire</label>
+                            <select name="selectTZ" id="selectTZ" class="form-control" placeholder=""
+                                aria-describedby="selectTZ">
+                                <option value="Europe_Paris">Europe_Paris</option>
+                                <option value="Europe_London">Europe_London</option>
+                                <option value="Africa_Niame">Africa_Niame</option>
+                                <option value="America_New_York">America_New_York</option>
+                                <option value="Asia_Seoul">Asia_Seoul</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="NTPServerZone">Serveur de temps</label>
+                            <select name="NTPServerZone" id="NTPServerZone" class="form-control" placeholder=""
+                                aria-describedby="NTPServerZone">
+                                <option value=1>pool.ntp.org</option>
+                                <option value=2>asia.pool.ntp.org</option>
+                                <option value=3>europe.pool.ntp.org</option>
+                                <option value=5>oceania.pool.ntp.org</option>
+                                <option value=6>south-america.pool.ntp.org</option>
+                            </select>
+                        </div>
+                        <button type='submit' class='btn btn-primary mb-2' name='saveTime'>Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="conf" role="tabpanel" aria-labelledby="profile-tab">
+            <h1>Autre Configuration</h1>
+            <div class='row justify-content-md-center'>
+                <div class='col-sm-6'>
+                    <form method='POST' action='saveOth'>
+                        <div class="form-group">
+                            <label for="enableDynamic">Activation Photoresistance</label>
+                            <input type="checkbox" class='form-control' id="enableDynamic" name='enableDynamic' value=1>
+                        </div>
+                        <div class="form-group" id="divMaxBright">
+                            <label for="maxBright">Luminosité Max</label>
+                            <input type='text' class='form-control' id='maxBright' name='maxBright'
+                                placeholder='Max Brightness (0->1024)'>
+                        </div>
+                        <div class="form-group" id="divStaticBright">
+                            <label for="staticBright">Luminosité</label>
+                            <input type='text' class='form-control' id='staticBright' name='staticBright'
+                                placeholder='Brightness (0->1024)'>
+                        </div>
+                        <div class="form-group">
+                            <label for="defaultStart">Programme démarrage</label>
+                            <select name="defaultStart" id="defaultStart" class="form-control" placeholder=""
+                                aria-describedby="defaultStart">
+                                <option value=0>Heure</option>
+                                <option value=1>Température</option>
+                            </select>
+                        </div>
+                        <button type='submit' class='btn btn-primary mb-2' id='saveOth'>Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <script type='text/javascript'>
+        getValues()
+    </script>
+    <script>
+        $(document).ready(function () {
+            $("#enableDynamic").change(function () {
+                handleCheckbox(this.checked);
+            })
+        })
+    </script>

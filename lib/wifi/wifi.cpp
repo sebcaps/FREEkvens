@@ -2,8 +2,9 @@
 #include <ESP8266WiFi.h>
 #include "config.h"
 #include "wifi.h"
+#include <ESP8266mDNS.h>
 
-extern struct ConfigSettingsStruct ConfigSettings;
+extern struct WifiConfigStruct wifiSettings;
 extern String modeWiFi;
 
 void setupWifiAP()
@@ -42,14 +43,15 @@ bool setupSTAWifi()
   WiFi.disconnect();
   delay(100);
 
-  WiFi.begin(ConfigSettings.ssid.c_str(), ConfigSettings.password.c_str());
+  WiFi.begin(wifiSettings.ssid.c_str(), wifiSettings.password.c_str());
 
-  IPAddress ip_address = parse_ip_address(ConfigSettings.ipAddress.c_str());
-  IPAddress gateway_address = parse_ip_address(ConfigSettings.ipGW.c_str());
-  IPAddress netmask = parse_ip_address(ConfigSettings.ipMask.c_str());
+  IPAddress ip_address = parse_ip_address(wifiSettings.ipAddress.c_str());
+  IPAddress gateway_address = parse_ip_address(wifiSettings.ipGW.c_str());
+  IPAddress netmask = parse_ip_address(wifiSettings.ipMask.c_str());
 
   WiFi.config(ip_address, gateway_address, netmask);
-
+  // TODO verify not empty
+  WiFi.hostname(wifiSettings.dnsName);
   int countDelay = 50;
   while (WiFi.status() != WL_CONNECTED)
   {
@@ -64,6 +66,6 @@ bool setupSTAWifi()
     delay(250);
   }
   Serial.println("In setupSTAWifi MODE");
-  Serial.println(ip_address);
+  WiFi.printDiag(Serial);
   return true;
 }

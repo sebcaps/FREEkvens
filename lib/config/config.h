@@ -3,26 +3,34 @@
 
 #include <Arduino.h>
 #include "LittleFS.h"
-#define VERSION "v1.0"
 
-struct ConfigSettingsStruct
+struct WifiConfigStruct
 {
     String ssid;
     String password;
     String ipAddress;
     String ipMask;
     String ipGW;
-    
+    String dnsName;
 };
 
-struct ConfigPanel
+struct TimeConfigStruct
 {
     String TimeZone;
     String NTPServer;
 };
 
+struct OtherConfigStruct
+{
+    byte dynamicBrigth;
+    int maxBrigth;
+    int staticBright;
+    byte startMode;
+};
+
 IPAddress parse_ip_address(const char *str);
-bool loadConfig();
-bool loadConfigPanel();
+bool loadWifiConfig();
+bool loadTimeConfig();
+bool loadOtherConfig();
 
 #endif
