@@ -5,8 +5,8 @@
 #include "web.h"
 #include "config.h"
 
-extern struct WifiConfigStruct wifiSettings;
-extern struct TimeConfigStruct timeConfig;
+// extern struct WifiConfigStruct wifiSettings;
+// extern struct TimeConfigStruct timeConfig;
 
 String TimeZone = "";
 String NTPServer = "";
@@ -89,7 +89,7 @@ void handleSaveTime()
     serverWeb.send(500, "text/plain", "BAD ARGS");
     return;
   }
-  const int capacity = JSON_OBJECT_SIZE(2);
+  const int capacity = JSON_OBJECT_SIZE(2) + 60;
   StaticJsonDocument<capacity> doc;
   doc["TimeZone"] = serverWeb.arg("selectTZ");
   doc["NTPServer"] = serverWeb.arg("selectNTP");

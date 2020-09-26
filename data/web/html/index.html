@@ -81,22 +81,22 @@
                             <label for="selectTZ">Fuseau horaire</label>
                             <select name="selectTZ" id="selectTZ" class="form-control" placeholder=""
                                 aria-describedby="selectTZ">
-                                <option value="Europe_Paris">Europe_Paris</option>
-                                <option value="Europe_London">Europe_London</option>
-                                <option value="Africa_Niame">Africa_Niame</option>
-                                <option value="America_New_York">America_New_York</option>
-                                <option value="Asia_Seoul">Asia_Seoul</option>
+                                <option value=0>Europe_Paris</option>
+                                <option value=1>Europe_London</option>
+                                <option value=2>Africa_Niame</option>
+                                <option value=3>America_New_York</option>
+                                <option value=4>Asia_Seoul</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label for="NTPServerZone">Serveur de temps</label>
-                            <select name="NTPServerZone" id="NTPServerZone" class="form-control" placeholder=""
-                                aria-describedby="NTPServerZone">
-                                <option value=1>pool.ntp.org</option>
-                                <option value=2>asia.pool.ntp.org</option>
-                                <option value=3>europe.pool.ntp.org</option>
-                                <option value=5>oceania.pool.ntp.org</option>
-                                <option value=6>south-america.pool.ntp.org</option>
+                            <select name="selectNTP" id="selectNTP" class="form-control" placeholder=""
+                                aria-describedby="selectNTP">
+                                <option value=0>pool.ntp.org</option>
+                                <option value=1>asia.pool.ntp.org</option>
+                                <option value=2>europe.pool.ntp.org</option>
+                                <option value=3>oceania.pool.ntp.org</option>
+                                <option value=4>south-america.pool.ntp.org</option>
                             </select>
                         </div>
                         <button type='submit' class='btn btn-primary mb-2' name='saveTime'>Save</button>

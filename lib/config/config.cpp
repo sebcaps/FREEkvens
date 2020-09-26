@@ -1,11 +1,4 @@
-#include "Arduino.h"
-#include <ESP8266WiFi.h>
 #include "config.h"
-#include "ArduinoJson.h"
-
-WifiConfigStruct wifiSettings;
-TimeConfigStruct timeConfig;
-OtherConfigStruct otherConfig;
 
 IPAddress parse_ip_address(const char *str)
 {
@@ -89,8 +82,8 @@ bool loadTimeConfig()
   DynamicJsonDocument doc(capacity);
   deserializeJson(doc, timeFile);
 
-  timeConfig.TimeZone = doc["TimeZone"].as<String>();
-  timeConfig.NTPServer = doc["NTPServer"].as<String>();
+  timeConfig.TimeZone = doc["TimeZone"];
+  timeConfig.NTPServer = doc["NTPServer"];
 
   timeFile.close();
 

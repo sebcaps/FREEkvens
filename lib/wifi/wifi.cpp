@@ -1,11 +1,4 @@
-#include "Arduino.h"
-#include <ESP8266WiFi.h>
-#include "config.h"
 #include "wifi.h"
-#include <ESP8266mDNS.h>
-
-extern struct WifiConfigStruct wifiSettings;
-extern String modeWiFi;
 
 void setupWifiAP()
 {
@@ -51,7 +44,12 @@ bool setupSTAWifi()
 
   WiFi.config(ip_address, gateway_address, netmask);
   // TODO verify not empty
-  WiFi.hostname(wifiSettings.dnsName);
+  if (wifiSettings.dnsName != "")
+  {
+    WiFi.hostname(wifiSettings.dnsName);
+    ArduinoOTA.setHostname(wifiSettings.dnsName.c_str());
+    MDNS.begin(wifiSettings.dnsName);
+  }
   int countDelay = 50;
   while (WiFi.status() != WL_CONNECTED)
   {

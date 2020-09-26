@@ -33,9 +33,9 @@
 #define p_photo 0
 #define p_temp 13
 
-extern struct WifiConfigStruct wifiSettings;
-extern struct TimeConfigStruct timeConfig;
-extern struct OtherConfigStruct otherConfig;
+struct WifiConfigStruct wifiSettings;
+struct TimeConfigStruct timeConfig;
+struct OtherConfigStruct otherConfig;
 
 enum program
 {
@@ -164,11 +164,17 @@ void setup()
   }
   // clear panel ;-)
   panel.clear();
-
 // TODO set as configuration VAR for MYTZ
 #define MYTZ TZ_Europe_Paris
-  // Serial.println(NTPServerList[cfgPanel.NTPServer.toInt()]);
-  configTime(MYTZ, NTPServerList[timeConfig.NTPServer.toInt()]);
+  Serial.println("***Will configure TZ");
+  Serial.println("From Config");
+  Serial.println(timeConfig.TimeZone);
+  Serial.println("From Function");
+  Serial.println(getTimeZone(timeConfig.TimeZone));
+  
+  configTime(getTimeZone(timeConfig.TimeZone), NTPServerList[timeConfig.NTPServer]);
+
+  // configTime(getTimeZone(timeConfig.TimeZone), NTPServerList[timeConfig.NTPServer]);
   setSyncProvider(customNtp);
 
   // FIXME : KO... if no network connection...;
@@ -206,11 +212,6 @@ void digitalClockDisplay()
 void loop()
 {
   webServerHandleClient();
-
-  if (wifiSettings.dnsName != "")
-  {
-    ArduinoOTA.setHostname(wifiSettings.dnsName.c_str());
-  }
   ArduinoOTA.handle();
   if (modeWiFi == "STA")
   {

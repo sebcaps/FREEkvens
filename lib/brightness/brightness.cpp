@@ -1,7 +1,5 @@
 #include "brightness.h"
-#include <Arduino.h>
 #define outMin 1022
-#define outMax 900
 #define inMin 0
 #define inMax 1024
 /*!
@@ -13,6 +11,11 @@
 */
 int computebrightness(int value)
 {
+    float outMax = 900;
+    if (otherConfig.dynamicBrigth)
+    {
+        outMax = otherConfig.maxBrigth;
+    }
     float a = ((float)outMin - (float)outMax) / ((float)inMin - (float)inMax);
     return (outMin + a * value);
 }

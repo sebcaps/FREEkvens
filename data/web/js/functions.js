@@ -1,10 +1,10 @@
 function getValues() {
-	$.get('http://192.168.0.17/api/time/', function (data) {
+	$.get('/api/time/', function (data) {
 		console.log(JSON.stringify(data));
 		$('#selectTZ').val(data.TimeZone);
 		$('#selectNTP').val(data.NTPServer);
 	});
-	$.get('http://192.168.0.17/api/wifi/', function (data) {
+	$.get('/api/wifi/', function (data) {
 		console.log(JSON.stringify(data));
 		$('#ssid').val(data.ssid);
 		$('#pass').val(data.pass);
@@ -13,7 +13,7 @@ function getValues() {
 		$('#gateway').val(data.gw);
 		$('#dnsname').val(data.dns);
 	});
-	$.get('http://192.168.0.17/api/other/', function (data) {
+	$.get('/api/other/', function (data) {
 		console.log(JSON.stringify(data));
 		isChecked = data.EnableDynamicBright == "1" ? true : false
 		$('#enableDynamic').prop('checked', isChecked);

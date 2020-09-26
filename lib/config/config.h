@@ -1,8 +1,9 @@
 #ifndef __CONFIG_H
-#define __CONFIG_H
-
+#define __CONFIG_H 
 #include <Arduino.h>
 #include "LittleFS.h"
+#include <ESP8266WiFi.h>
+#include "ArduinoJson.h"
 
 struct WifiConfigStruct
 {
@@ -16,8 +17,8 @@ struct WifiConfigStruct
 
 struct TimeConfigStruct
 {
-    String TimeZone;
-    String NTPServer;
+    byte TimeZone;
+    byte NTPServer;
 };
 
 struct OtherConfigStruct
@@ -27,6 +28,10 @@ struct OtherConfigStruct
     int staticBright;
     byte startMode;
 };
+
+extern struct WifiConfigStruct wifiSettings;
+extern struct TimeConfigStruct timeConfig;
+extern struct OtherConfigStruct otherConfig;
 
 IPAddress parse_ip_address(const char *str);
 bool loadWifiConfig();
