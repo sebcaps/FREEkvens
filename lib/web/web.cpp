@@ -1,15 +1,4 @@
-#include <Arduino.h>
-#include "ArduinoJson.h"
-#include <ESP8266WebServer.h>
-#include <ESP8266HTTPClient.h>
 #include "web.h"
-#include "config.h"
-
-// extern struct WifiConfigStruct wifiSettings;
-// extern struct TimeConfigStruct timeConfig;
-
-String TimeZone = "";
-String NTPServer = "";
 
 ESP8266WebServer serverWeb(80);
 
@@ -31,6 +20,7 @@ void initWebServer()
   serverWeb.serveStatic("/web/img/wait.gif", LittleFS, "/web/img/wait.gif");
   serverWeb.serveStatic("/web/img/", LittleFS, "/web/img/");
   serverWeb.serveStatic("/", LittleFS, "/web/html/index.html");
+  serverWeb.serveStatic("/wait", LittleFS, "/web/html/wait.html");
 
   serverWeb.on("/saveWIFI", HTTP_POST, handleSaveWifi);
   serverWeb.on("/saveTime", HTTP_POST, handleSaveTime);
@@ -38,6 +28,7 @@ void initWebServer()
   serverWeb.on("/api/time/", HTTP_GET, handleTimeAPI);
   serverWeb.on("/api/wifi/", HTTP_GET, handleWifiAPI);
   serverWeb.on("/api/other/", HTTP_GET, handleOthAPI);
+  serverWeb.on("/ping", HTTP_GET, handlePing);
   serverWeb.on("/reboot", handleReboot);
   serverWeb.onNotFound(handleNotFound);
   serverWeb.begin();
@@ -101,7 +92,7 @@ void handleSaveTime()
   {
     serializeJson(doc, timeFile);
   }
-  serverWeb.sendHeader(F("Location"), F("/"));
+  serverWeb.sendHeader(F("Location"), F("/wait"));
   serverWeb.send(303);
 }
 
@@ -128,7 +119,8 @@ void handleSaveWifi()
   {
     serializeJson(doc, configFile);
   }
-  serverWeb.send(200, "text/html", "Save config OK ! <br><form method='GET' action='reboot'><input type='submit' name='reboot' value='Reboot'></form>");
+  serverWeb.sendHeader(F("Location"), F("/wait"));
+  serverWeb.send(303);
 }
 void handleSaveOther()
 {
@@ -150,118 +142,19 @@ void handleSaveOther()
   }
   else
   {
-    // json.printTo(configFile);
     serializeJson(doc, otherConfigFile);
   }
-  serverWeb.send(200, "text/html", "Save config OK ! <br><form method='GET' action='reboot'><input type='submit' name='reboot' value='Reboot'></form>");
+
+  serverWeb.sendHeader(F("Location"), F("/wait"));
+  serverWeb.send(303);
 }
-// void handleTools()
-// {
-//   String result;
-
-//   result += F("<html>");
-//   result += FPSTR(HTTP_HEADER);
-//   result += F("<h1>Tools</h1>");
-//   result += F("<div class='btn-group-vertical'>");
-//   result += F("<a href='/reboot' class='btn btn-primary mb-2'>Reboot</button>");
-//   result += F("</div></body></html>");
-
-//   serverWeb.send(200, F("text/html"), result);
-// }
 
 void handleReboot()
 {
-  String result;
-
-  result += F("<html>");
-  // result += FPSTR(HTTP_HEADER);
-  result += F("<h1>Reboot ...</h1>");
-  result = result + F("</body></html>");
-  serverWeb.sendHeader(F("Location"), F("/"));
-  serverWeb.send(303);
-
+  Serial.println("/////I WILL RESTART //////////");
   ESP.restart();
 }
-
-void handleUpdate()
+void handlePing()
 {
-  String result;
-
-  result += F("<html>");
-  // result += FPSTR(HTTP_HEADER);
-  result += F("<h1>Update ...</h1>");
-  result += F("<div class='row justify-content-md-center' >");
-  result += F("<div class='col-sm-6'><form method='POST' action='StartOTA' enctype='multipart/form-data'>");
-  result += F("<div class='form-group'>");
-  result += F(" <label for='ip'>File : </label>");
-  result += F(" <input type='file' name='file' class='form-control' id='file' />");
-  result += F("</div>");
-  result += F("<button type='submit' class='btn btn-primary mb-2'>Update</button>");
-  result = result + F("</form></body></html>");
-
-  serverWeb.send(200, F("text/html"), result);
-}
-
-// void handleFSbrowser()
-// {
-//   String result;
-//   result += F("<html>");
-//   result += FPSTR(HTTP_HEADER);
-//   result += F("<h1>FSBrowser</h1>");
-//   result += F("<nav id='navbar-custom' class='navbar navbar-default navbar-fixed-left'>");
-//   result += F("      <div class='navbar-header'>");
-//   result += F("        <!--<a class='navbar-brand' href='#'>Brand</a>-->");
-//   result += F("      </div>");
-//   result += F("<ul class='nav navbar-nav'>");
-
-//   String str = "";
-//   Dir dir = LittleFS.openDir("/config/");
-//   while (dir.next())
-//   {
-//     String tmp = dir.fileName();
-//     tmp = tmp.substring(8);
-//     result += F("<li><a href='#' onClick=\"readfile('");
-//     result += tmp;
-//     result += F("');\">");
-//     result += tmp;
-//     result += F(" ( ");
-//     result += dir.fileSize();
-//     result += F(" o)</a></li>");
-//   }
-//   result += F("</ul></nav>");
-//   result += F("<div class='container-fluid' >");
-//   result += F("  <div class='app-main-content'>");
-//   result += F("<form method='POST' action='saveFile'>");
-//   result += F("<div class='form-group'>");
-//   result += F(" <label for='file'>File : <span id='title'></span></label>");
-//   result += F("<input type='hidden' name='filename' id='filename' value=''>");
-//   result += F(" <textarea class='form-control' id='file' name='file' rows='10'>");
-//   result += F("</textarea>");
-//   result += F("</div>");
-//   result += F("<button type='submit' class='btn btn-primary mb-2'>Save</button>");
-//   result += F("</Form>");
-//   result += F("</div>");
-//   result += F("</div>");
-//   result += F("</body></html>");
-
-//   serverWeb.send(200, F("text/html"), result);
-// }
-
-void handleReadfile()
-{
-  String result;
-  String filename = "/config/" + serverWeb.arg(0);
-  File file = LittleFS.open(filename, "r");
-
-  if (!file)
-  {
-    return;
-  }
-
-  while (file.available())
-  {
-    result += (char)file.read();
-  }
-  file.close();
-  serverWeb.send(200, F("text/html"), result);
+  serverWeb.send(200);
 }

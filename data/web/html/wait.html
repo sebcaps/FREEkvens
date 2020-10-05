@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <script type='text/javascript' src='../js/jquery-min.js'></script>
+    <script type='text/javascript' src='../js/bootstrap.min.js'></script>
+    <script type='text/javascript' src='../js/functions.js'></script>
+    <link href='../css/bootstrap.min.css' rel='stylesheet' type='text/css' />
+    <link href='../css/style.css' rel='stylesheet' type='text/css' />
+</head>
+
+<body>
+    <div class="container">
+        <div class="row" style="height:50px;">
+        </div>
+        <div class='row align-items-center'>
+            <div class="col"></div>
+            <div class='col align-self-center text-center'>
+                <div class="spinner-border text-warning"></div>
+            </div>
+            <div class="col"></div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <h1 class="text-center">Reboot en cours...</h1>
+            </div>
+        </div>
+    </div>
+    </div>
+    <script type="text/javascript">
+        $.get('/reboot');
+        setTimeout(verifyPing, 500) // Verify ping after waiting 500ms
+        function verifyPing() { //every 3s verify if server answer if yes redirect to index
+            setInterval(function () {
+                $.get('/ping', function (data) {})
+                    .done(function () {
+                        window.location.replace('/')
+                    })
+                    .fail(function (data) {
+                        console.log(`Got error :${data.status}`)
+                    })
+            }, 3000)
+        }
+    </script>
+</body>

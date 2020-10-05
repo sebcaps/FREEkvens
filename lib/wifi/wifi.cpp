@@ -43,7 +43,7 @@ bool setupSTAWifi()
   IPAddress netmask = parse_ip_address(wifiSettings.ipMask.c_str());
 
   WiFi.config(ip_address, gateway_address, netmask);
-  // TODO verify not empty
+
   if (wifiSettings.dnsName != "")
   {
     WiFi.hostname(wifiSettings.dnsName);

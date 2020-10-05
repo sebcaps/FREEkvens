@@ -28,8 +28,7 @@
 #define p_clock 2
 #define p_latch 0
 #define NB_PROG 2
-#define p_btn1 13 // A0 (Adafruit Feather M0) - RED button (black wire)
-#define p_btn2 5  // A1 (Adafruit Feather M0) - YELLOW button (white wire)
+#define p_btn1 5 // A1 (Adafruit Feather M0) - YELLOW button (white wire)
 #define p_photo 0
 #define p_temp 13
 
@@ -60,7 +59,7 @@ DallasTemperature sensor(&oneWire);
 FrekvensPanel panel(p_latch, p_clock, p_data);
 /*Button*/
 SimpleButton button1(1, p_btn1, 1, 20);
-SimpleButton button2(2, p_btn2, 1, 20);
+
 /*Quadrant (ie part of panel)*/
 Quadrant NorthEast(NE);
 Quadrant SouthWest(SW);
@@ -81,16 +80,7 @@ void buttonHandler(int id, int state)
 {
   if (state) // button pressed
   {
-    switch (id)
-    {
-    case 1:
-      // TODO handle button to manage brigthness ?
-      // setBrightMode(activeBrightMode + 1);
-      break;
-    case 2:
-      setProgram(activeProgram + 1);
-      break;
-    }
+    setProgram(activeProgram + 1);
   }
 }
 void setup()
@@ -138,9 +128,8 @@ void setup()
   initWebServer();
   // Input for buttons
   pinMode(p_btn1, INPUT_PULLUP);
-  pinMode(p_btn2, INPUT_PULLUP);
   button1.attachHandler(buttonHandler);
-  button2.attachHandler(buttonHandler);
+
 
   // Initialise panel Quadrants
   NorthWest.begin(&panel, &Serial);
@@ -164,17 +153,8 @@ void setup()
   }
   // clear panel ;-)
   panel.clear();
-// TODO set as configuration VAR for MYTZ
-#define MYTZ TZ_Europe_Paris
-  Serial.println("***Will configure TZ");
-  Serial.println("From Config");
-  Serial.println(timeConfig.TimeZone);
-  Serial.println("From Function");
-  Serial.println(getTimeZone(timeConfig.TimeZone));
-  
+  // Configure timeZone and NTP Server
   configTime(getTimeZone(timeConfig.TimeZone), NTPServerList[timeConfig.NTPServer]);
-
-  // configTime(getTimeZone(timeConfig.TimeZone), NTPServerList[timeConfig.NTPServer]);
   setSyncProvider(customNtp);
 
   // FIXME : KO... if no network connection...;
@@ -187,7 +167,7 @@ void setup()
   // }
 
   //Set Sync Intervals
-  setSyncInterval(45);
+  setSyncInterval(60);
   //Initialisation for OTA
   ArduinoOTA.begin();
 }
@@ -238,7 +218,6 @@ void loop()
   timeStatus_t ts = timeStatus();
   currentNow = now();
   button1.scan();
-  button2.scan();
 
   switch (activeProgram)
   {

@@ -1,6 +1,6 @@
 {
     "EnableDynamicBright": 1,
-    "MaxBright": 900,
+    "MaxBright": 1000,
     "StaticBrightness": 500,
     "StartMode": 0
 }
